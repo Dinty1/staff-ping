@@ -8,19 +8,16 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/DB8888/staff-ping.git"
+    "url": "gh_nonpersonal:Dinty1/staff-ping"
   },
+  "keywords": [],
   "author": "",
   "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/DB8888/staff-ping/issues"
-  },
-  "homepage": "https://github.com/DB8888/staff-ping#readme",
+  "type": "module",
   "dependencies": {
-    "discord.js": "^12.5.1",
-    "dotenv": "^8.2.0",
-    "express": "^4.17.1",
-    "follow-redirects": "^1.13.2",
-    "minecraft-server-util": "^3.4.2"
+    "axios": "^0.27.2",
+    "discord.js": "^13.8.1",
+    "dotenv": "^16.0.1",
+    "minecraft-server-util": "^5.2.10"
   }
 }

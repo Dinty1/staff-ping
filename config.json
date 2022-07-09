@@ -1,0 +1,12 @@
+{
+    "last_seen_storage_channel": "995311360135147600",
+    "check_interval": "120000",
+    "player_spreadsheet_id": "1_d6j9f4elr2OKAXQzrcvsumi4HNkkrCAm5JJrRDFLUc",
+    "player_spreadsheet_sheet_name": "Players",
+    "deadzone_time": "3600000",
+    "admin_ping_role": "995334168588341289",
+    "mod_ping_role": "995334145750351953",
+    "conductor_ping_role": "995334097549402112",
+    "ping_channel": "811724570108100679",
+    "status_channel": "995365076875874494"
+}
