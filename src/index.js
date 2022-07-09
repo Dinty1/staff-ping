@@ -27,7 +27,7 @@ client.on("ready", () => {
     messageContent += "\n- If you're waiting for anyone who can do mod things like block checks or town endorsements, subscribe to Mod notifications.";
     messageContent += "\n- If you're waiting for admins for rollbacks or the like, subscribe to Admin notifications.";
     messageContent += "\n- You can remove each individual preference by pressing the button again or remove all by pressing the Remove All button."
-    messageContent += "\n**Note:** If you only want a worldedit, you _only need_ to enable conductor notifications. Mod and Admin notifications __will be triggered__ even if there is already a conductor online. You should not need to have all three roles.";
+    messageContent += "\n**Note:** If you only want a worldedit, you _only need_ to enable conductor notifications. Mods and Admins are automatically designated as conductors.";
 
     client.channels.cache.get("811724497619124234").send({ content: messageContent, components: [row] })*/
 });
