@@ -58,28 +58,30 @@ export default class ServerMonitor {
         if (!onlinePerson) return; // No people so no need to do stuff
 
         const pinging = [];
-        const deadzoneTime = parseInt(config.deadzone_time);
+        const conductorDeadzoneTime = parseInt(config.conductor_deadzone_time);
+        const modDeadzoneTime = parseInt(config.mod_deadzone_time);
+        const adminDeadzoneTime = parseInt(config.admin_deadzone_time);
 
         let adminDeadzoneLength
         let modDeadzoneLength;
         let conductorDeadzoneLength;
         
         if (foundAdmin) {
-            if (Date.now() > parseInt(parseInt(this.lastSeenData.admin) + parseInt(deadzoneTime))) {
+            if (Date.now() > parseInt(parseInt(this.lastSeenData.admin) + adminDeadzoneTime)) {
                 pinging.push(config.admin_ping_role);
                 adminDeadzoneLength = Date.now() - parseInt(this.lastSeenData.admin);
             }
             this.lastSeenData.admin = Date.now();
         }
         if (foundMod) {
-            if (Date.now() > parseInt(this.lastSeenData.mod) + deadzoneTime) {
+            if (Date.now() > parseInt(this.lastSeenData.mod) + modDeadzoneTime) {
                 pinging.push(config.mod_ping_role);
                 modDeadzoneLength = Date.now() - parseInt(this.lastSeenData.mod);
             }
             this.lastSeenData.mod = Date.now();
         }
         if (foundConductor) {
-            if (Date.now() > parseInt(this.lastSeenData.conductor) + deadzoneTime) {
+            if (Date.now() > parseInt(this.lastSeenData.conductor) + conductorDeadzoneTime) {
                 pinging.push(config.conductor_ping_role);
                 conductorDeadzoneLength = Date.now() - parseInt(this.lastSeenData.conductor);
             }
