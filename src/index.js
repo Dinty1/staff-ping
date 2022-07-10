@@ -60,9 +60,9 @@ async function toggleRole(member, role, interaction) {
 
 function replyToPreferenceUpdateWithCurrentPreferences(i) {
     let outputMessage = "Updated! Here are your current preferences:\n";
-    outputMessage += `**Conductor Notifications:** ${i.member.roles.cache.has(config.conductor_ping_role) ? "On" : "Off"}\n`;
-    outputMessage += `**Mod Notifications:** ${i.member.roles.cache.has(config.mod_ping_role) ? "On" : "Off"}\n`;
-    outputMessage += `**Admin Notifications:** ${i.member.roles.cache.has(config.admin_ping_role) ? "On" : "Off"}`;
+    outputMessage += `**Conductor Notifications:** ${i.member.roles.cache.has(config.conductor_ping_role) ? ":white_check_mark:" : ":x:"}\n`;
+    outputMessage += `**Mod Notifications:** ${i.member.roles.cache.has(config.mod_ping_role) ? ":white_check_mark:" : ":x:"}\n`;
+    outputMessage += `**Admin Notifications:** ${i.member.roles.cache.has(config.admin_ping_role) ? ":white_check_mark:" : ":x:"}`;
 
     i.reply({ content: outputMessage, ephemeral: true });
 }
