@@ -2,6 +2,7 @@ import { config } from "./index.js";
 import axios from "axios";
 import mcUtil from "minecraft-server-util";
 import escapeMarkdown from "./util/escapeMarkdown.js";
+import prettyMilliseconds from "pretty-ms";
 
 export default class ServerMonitor {
     client;
@@ -94,9 +95,9 @@ export default class ServerMonitor {
 
         let outputMessage = `${pinging.map(r => "<@&" + r + ">").join(" ")} **${escapeMarkdown(onlinePerson)}** has joined! Deadzones ended:`;
 
-        if (adminDeadzoneLength) outputMessage += `\n**Admin:** ${Math.floor(adminDeadzoneLength / 1000 / 60)} minutes`;
-        if (modDeadzoneLength) outputMessage += `\n**Mod:** ${Math.floor(modDeadzoneLength / 1000 / 60)} minutes`;
-        if (conductorDeadzoneLength) outputMessage += `\n**Conductor:** ${Math.floor(conductorDeadzoneLength / 1000 / 60)} minutes`;
+        if (adminDeadzoneLength) outputMessage += `\n**Admin:** ${prettyMilliseconds(conductorDeadzoneLength)}`;
+        if (modDeadzoneLength) outputMessage += `\n**Mod:** ${prettyMilliseconds(modDeadzoneLength)}`;
+        if (conductorDeadzoneLength) outputMessage += `\n**Conductor:** ${prettyMilliseconds(adminDeadzoneLength)}`;
 
         this.client.channels.cache.get(config.ping_channel).send(outputMessage);
     }
