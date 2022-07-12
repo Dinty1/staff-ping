@@ -95,9 +95,9 @@ export default class ServerMonitor {
 
         let outputMessage = `${pinging.map(r => "<@&" + r + ">").join(" ")} **${escapeMarkdown(onlinePerson)}** has joined! Deadzones ended:`;
 
-        if (adminDeadzoneLength) outputMessage += `\n**Admin:** ${prettyMilliseconds(conductorDeadzoneLength, {verbose: true})}`;
+        if (adminDeadzoneLength) outputMessage += `\n**Admin:** ${prettyMilliseconds(adminDeadzoneLength, {verbose: true})}`;
         if (modDeadzoneLength) outputMessage += `\n**Mod:** ${prettyMilliseconds(modDeadzoneLength, {verbose: true})}`;
-        if (conductorDeadzoneLength) outputMessage += `\n**Conductor:** ${prettyMilliseconds(adminDeadzoneLength, {verbose: true})}`;
+        if (conductorDeadzoneLength) outputMessage += `\n**Conductor:** ${prettyMilliseconds(conductorDeadzoneLength, {verbose: true})}`;
 
         this.client.channels.cache.get(config.ping_channel).send(outputMessage);
     }
