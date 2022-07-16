@@ -136,10 +136,9 @@ export default class ServerMonitor {
 
         newStatusMessageBuilder.push(`\n**Staff/Conductors and their Last Seen Dates**`);
         for (const staffMember of staffData) {
-            let firstPartOfMessage = `${this.rankEmoji(staffMember.Rank)} ${staffMember.Name}: `;
-            let secondPartOfMessage = `${onlineStaff.includes(staffMember) ? ":green_square:" : `:red_square: (${this.lastSeenData[staffMember.UUID] ? this.timestamp(this.lastSeenData[staffMember.UUID]) : ":shrug:" })`}`;
+            let staffMemberMessage = `${onlineStaff.includes(staffMember) ? ":green_square:" : ":red_square:" } ${this.rankEmoji(staffMember.Rank)} ${staffMember.Name}${onlineStaff.includes(staffMember) ? "" : `: ${this.lastSeenData[staffMember.UUID] ? this.timestamp(this.lastSeenData[staffMember.UUID]) : ":shrug:" }`}`;
 
-            newStatusMessageBuilder.push(this.insertWhitespace(firstPartOfMessage, secondPartOfMessage));
+            newStatusMessageBuilder.push(staffMemberMessage);
         }
 
         // Because of rate limits and things we're going to spread this out over multiple messages
@@ -180,13 +179,5 @@ export default class ServerMonitor {
             case "Mod": return "<:Mo:997944804518395994>";
             case "Conductor": return "<:Co:997944814295334913>";
         }
-    }
-
-    insertWhitespace(firstPart, secondPart) { // Just to make stuff cleaner
-        // Discord font is not monospaced so theoretically impossible
-        // Revisit when in mood to do maths shit
-        // const fillUntil = 80;
-        // return firstPart.padEnd(fillUntil) + secondPart;
-        return firstPart + secondPart;
     }
 }
