@@ -16,6 +16,9 @@ export default class ServerMonitor {
 
     async run() {
         this.lastSeenDataMessage = (await this.client.channels.cache.get(config.last_seen_storage_channel).messages.fetch({ limit: 1 })).first();
+
+        if (this.lastSeenDataMessage.content.length > 1900) this.client.channels.cache.get(config.private_stuff_channel).send("Last seen data is getting near to 2000 characters");
+
         this.lastSeenData = JSON.parse(this.lastSeenDataMessage.content);
 
         this.checkServer();
@@ -36,6 +39,15 @@ export default class ServerMonitor {
         for (let i = 0; i < onlineNames.length; i += 10) {
             let { data } = await axios.post("https://api.mojang.com/profiles/minecraft", onlineNames.slice(i, i + 10));
             onlineIds.push(...data.map(p => p.id));
+        }
+
+        const onlineStaff = [];
+
+        for (const staffMember of staffData) {
+            if (onlineIds.includes(staffMember.UUID)) {
+                this.lastSeenData[staffMember.UUID] = Date.now();
+                onlineStaff.push(staffMember);
+            }
         }
 
         let foundConductor = null;
@@ -62,7 +74,7 @@ export default class ServerMonitor {
             }
         }
 
-        this.updateStatusMessage(foundConductor, foundMod, foundAdmin);
+        this.updateStatusMessage(foundConductor, foundMod, foundAdmin, onlineStaff, staffData);
 
         if (!onlinePerson) return; // No people so no need to do stuff
 
@@ -114,19 +126,67 @@ export default class ServerMonitor {
         this.lastSeenDataMessage.edit(JSON.stringify(this.lastSeenData));
     }
 
-    async updateStatusMessage(onlineConductor, onlineMod, onlineAdmin) {
+    async updateStatusMessage(onlineConductor, onlineMod, onlineAdmin, onlineStaff, staffData) {
         const statusChannel = this.client.channels.cache.get(config.status_channel);
 
-        let newStatusMessage = "**Roles and their Last Seen Dates**";
-        newStatusMessage += `\nConductor: ${onlineConductor ? `:green_square: (${escapeMarkdown(onlineConductor)})` : `:red_square: (${this.timestamp(this.lastSeenData.conductor)})`}`;
-        newStatusMessage += `\nMod: ${onlineMod ? `:green_square: (${escapeMarkdown(onlineMod)})` : `:red_square: (${this.timestamp(this.lastSeenData.mod)})`}`;
-        newStatusMessage += `\nAdmin: ${onlineAdmin ? `:green_square: (${escapeMarkdown(onlineAdmin)})` : `:red_square: (${this.timestamp(this.lastSeenData.admin)})`}`;
+        let newStatusMessageBuilder = ["**Roles and their Last Seen Dates**"];
+        newStatusMessageBuilder.push(`Conductor: ${onlineConductor ? `:green_square: (${escapeMarkdown(onlineConductor)})` : `:red_square: (${this.timestamp(this.lastSeenData.conductor)})`}`);
+        newStatusMessageBuilder.push(`Mod: ${onlineMod ? `:green_square: (${escapeMarkdown(onlineMod)})` : `:red_square: (${this.timestamp(this.lastSeenData.mod)})`}`);
+        newStatusMessageBuilder.push(`Admin: ${onlineAdmin ? `:green_square: (${escapeMarkdown(onlineAdmin)})` : `:red_square: (${this.timestamp(this.lastSeenData.admin)})`}`);
 
-        const statusMessage = (await statusChannel.messages.fetch({ limit: 1 })).first();
-        statusMessage.edit(newStatusMessage);
+        newStatusMessageBuilder.push(`\n**Staff/Conductors and their Last Seen Dates**`);
+        for (const staffMember of staffData) {
+            let firstPartOfMessage = `${this.rankEmoji(staffMember.Rank)} ${staffMember.Name}: `;
+            let secondPartOfMessage = `${onlineStaff.includes(staffMember) ? ":green_square:" : `:red_square: (${this.lastSeenData[staffMember.UUID] ? this.timestamp(this.lastSeenData[staffMember.UUID]) : ":shrug:" })`}`;
+
+            newStatusMessageBuilder.push(this.insertWhitespace(firstPartOfMessage, secondPartOfMessage));
+        }
+
+        // Because of rate limits and things we're going to spread this out over multiple messages
+        // If you want to preserve your brain stop reading now
+        const statusMessages = Array.from((await statusChannel.messages.fetch({ limit: 10 })).values()).reverse();
+        
+        let currentMessageBuffer = [];
+
+        for (const line of newStatusMessageBuilder) {
+            if (currentMessageBuffer.join("\n").length + line.length > 2000) {
+                if (statusMessages[0]) {
+                    statusMessages[0].edit(currentMessageBuffer.join("\n"));
+                    statusMessages.shift();
+                }
+                else statusChannel.send(currentMessageBuffer.join("\n"));
+                currentMessageBuffer = [];
+            } else currentMessageBuffer.push(line);
+        }
+
+        if (currentMessageBuffer.length > 0) {
+            if (statusMessages[0]) {
+                statusMessages[0].edit(currentMessageBuffer.join("\n"));
+                statusMessages.shift();
+            }
+            else statusChannel.send(currentMessageBuffer.join("\n"));
+        }
+
+        statusMessages.forEach(m => m.delete()); // Anything left over is spare and can go
     }
 
     timestamp(timeMs) {
         return `<t:${Math.floor(timeMs / 1000)}:R>`;
+    }
+
+    rankEmoji(rank) {
+        switch (rank) {
+            case "Admin": return "<:Ad:997944788747825284>";
+            case "Mod": return "<:Mo:997944804518395994>";
+            case "Conductor": return "<:Co:997944814295334913>";
+        }
+    }
+
+    insertWhitespace(firstPart, secondPart) { // Just to make stuff cleaner
+        // Discord font is not monospaced so theoretically impossible
+        // Revisit when in mood to do maths shit
+        // const fillUntil = 80;
+        // return firstPart.padEnd(fillUntil) + secondPart;
+        return firstPart + secondPart;
     }
 }
