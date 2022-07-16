@@ -136,7 +136,7 @@ export default class ServerMonitor {
 
         newStatusMessageBuilder.push(`\n**Staff/Conductors and their Last Seen Dates**`);
         for (const staffMember of staffData) {
-            let staffMemberMessage = `${onlineStaff.includes(staffMember) ? ":green_square:" : ":red_square:" } ${this.rankEmoji(staffMember.Rank)} ${staffMember.Name}${onlineStaff.includes(staffMember) ? "" : `: ${this.lastSeenData[staffMember.UUID] ? this.timestamp(this.lastSeenData[staffMember.UUID]) : ":shrug:" }`}`;
+            let staffMemberMessage = `${onlineStaff.includes(staffMember) ? ":green_square:" : ":red_square:" } ${this.rankEmoji(staffMember.Rank)} ${escapeMarkdown(staffMember.Name)}${onlineStaff.includes(staffMember) ? "" : `: ${this.lastSeenData[staffMember.UUID] ? this.timestamp(this.lastSeenData[staffMember.UUID]) : ":shrug:" }`}`;
 
             newStatusMessageBuilder.push(staffMemberMessage);
         }
