@@ -25,10 +25,18 @@ export default class ServerMonitor {
     async checkServer() {
         const { data: staffData } = await axios.get(`https://script.google.com/macros/s/AKfycbwde4vwt0l4_-qOFK_gL2KbVAdy7iag3BID8NWu2DQ1566kJlqyAS1Y/exec?spreadsheetId=${config.player_spreadsheet_id}&sheetName=${config.player_spreadsheet_sheet_name}`);
         
-        const server = await mcUtil.status("minecartrapidtransit.net");
+        const server = await mcUtil.queryFull("minecartrapidtransit.net");
 
-        if (!server.players.sample) return; // Not much we can do here
-        const onlineIds = server.players.sample.map(p => p.id);
+        if (!server.players.list) return; // Not much we can do here
+        const onlineNames = server.players.list;
+
+        const onlineIds = [];
+
+        // Need to convert these names to IDs. Max number per request is 10
+        for (let i = 0; i < onlineNames.length; i += 10) {
+            let { data } = await axios.post("https://api.mojang.com/profiles/minecraft", onlineNames.slice(i, i + 10));
+            onlineIds.push(...data.map(p => p.id));
+        }
 
         let foundConductor = null;
         let foundMod = null;
