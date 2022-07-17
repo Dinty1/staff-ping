@@ -164,7 +164,8 @@ export default class ServerMonitor {
                 }
                 else statusChannel.send(currentMessageBuffer.join("\n"));
                 currentMessageBuffer = [];
-            } else currentMessageBuffer.push(line);
+            } 
+            currentMessageBuffer.push(line);
         }
 
         if (currentMessageBuffer.length > 0) {
