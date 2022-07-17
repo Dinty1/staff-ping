@@ -28,10 +28,19 @@ export default class ServerMonitor {
     async checkServer() {
         const { data: staffData } = await axios.get(`https://script.google.com/macros/s/AKfycbwde4vwt0l4_-qOFK_gL2KbVAdy7iag3BID8NWu2DQ1566kJlqyAS1Y/exec?spreadsheetId=${config.player_spreadsheet_id}&sheetName=${config.player_spreadsheet_sheet_name}`);
         
-        const server = await mcUtil.queryFull("minecartrapidtransit.net");
+        // In an ideal world we'd be able to just mcUtil.queryFull() and get everyone who's supposed to be visible
+        // But due to some sort of stupid shite only mcUtil.status() seems to exclude vanished players
+        // And mcUtil.status() only returns up to 12 players
+        // So we need to get our info off dynmap and then run mcUtil.status() to see if we can pick up any stragglers who might be hidden on dynmap
+        // Not 100% reliable but probably the best we can do
+        // Fuck you Mojang <3
+        const { data: dynmapData } = await axios.get("https://dynmap.minecartrapidtransit.net/standalone/dynmap_new.json");
+        const server = await mcUtil.status("minecartrapidtransit.net");
 
-        if (!server.players.list) return; // Not much we can do here
-        const onlineNames = server.players.list;
+        if (!server.players.sample || !dynmapData || !dynmapData.players) return; // Not much we can do here
+
+        const onlineNames = dynmapData.players.map(p => p.account);
+        onlineNames.push(...server.players.sample.map(p => p.name).filter(p => !onlineNames.includes(p)));
 
         const onlineIds = [];
 
