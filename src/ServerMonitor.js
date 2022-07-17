@@ -130,9 +130,9 @@ export default class ServerMonitor {
         const statusChannel = this.client.channels.cache.get(config.status_channel);
 
         let newStatusMessageBuilder = ["**Roles and their Last Seen Dates**"];
-        newStatusMessageBuilder.push(`${onlineConductor ? ":green_square:" : ":red_square:"} ${this.rankEmoji("Conductor")} Conductor: ${onlineConductor ? `${escapeMarkdown(onlineConductor)}` : `${this.timestamp(this.lastSeenData.conductor)}`}`);
-        newStatusMessageBuilder.push(`${onlineMod ? ":green_square:" : ":red_square:"} ${this.rankEmoji("Mod")} Mod: ${onlineMod ? `${escapeMarkdown(onlineMod)}` : `${this.timestamp(this.lastSeenData.mod)}`}`);
         newStatusMessageBuilder.push(`${onlineAdmin ? ":green_square:" : ":red_square:"} ${this.rankEmoji("Admin")} Admin: ${onlineAdmin ? `${escapeMarkdown(onlineAdmin)}` : `${this.timestamp(this.lastSeenData.admin)}`}`);
+        newStatusMessageBuilder.push(`${onlineMod ? ":green_square:" : ":red_square:"} ${this.rankEmoji("Mod")} Mod: ${onlineMod ? `${escapeMarkdown(onlineMod)}` : `${this.timestamp(this.lastSeenData.mod)}`}`);
+        newStatusMessageBuilder.push(`${onlineConductor ? ":green_square:" : ":red_square:"} ${this.rankEmoji("Conductor")} Conductor: ${onlineConductor ? `${escapeMarkdown(onlineConductor)}` : `${this.timestamp(this.lastSeenData.conductor)}`}`);
 
         newStatusMessageBuilder.push(`\n**Staff/Conductors and their Last Seen Dates**`);
         for (const staffMember of staffData) {
