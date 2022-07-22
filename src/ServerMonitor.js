@@ -10,6 +10,8 @@ export default class ServerMonitor {
     lastSeenDataMessage;
     lastSeenData;
 
+    statusErrorMessage = null;
+
     constructor(client) {
         this.client = client;
     }
@@ -37,7 +39,10 @@ export default class ServerMonitor {
         const { data: dynmapData } = await axios.get("https://dynmap.minecartrapidtransit.net/standalone/dynmap_new.json");
         const server = await mcUtil.status("minecartrapidtransit.net");
 
-        if (!server.players.sample || !dynmapData || !dynmapData.players) return; // Not much we can do here
+        if (!server.players.sample || !dynmapData || !dynmapData.players) {
+            this.statusErrorMessage = "Unable to find players on the server";
+            return;
+        }
 
         const onlineNames = dynmapData.players.map(p => p.account);
         onlineNames.push(...server.players.sample.map(p => p.name).filter(p => !onlineNames.includes(p)));
@@ -46,8 +51,9 @@ export default class ServerMonitor {
 
         // Need to convert these names to IDs. Max number per request is 10
         for (let i = 0; i < onlineNames.length; i += 10) {
-            let { data } = await axios.post("https://api.mojang.com/profiles/minecraft", onlineNames.slice(i, i + 10));
-            onlineIds.push(...data.map(p => p.id));
+            let { data } = await axios.post("https://api.mojang.com/profiles/minecraft", onlineNames.slice(i, i + 10))
+                .catch(error => this.statusErrorMessage = "Unable to reach Mojang API");
+            if (data) onlineIds.push(...data.map(p => p.id));
         }
 
         const onlineStaff = [];
@@ -138,7 +144,15 @@ export default class ServerMonitor {
     async updateStatusMessage(onlineConductor, onlineMod, onlineAdmin, onlineStaff, staffData) {
         const statusChannel = this.client.channels.cache.get(config.status_channel);
 
-        let newStatusMessageBuilder = ["**Roles and their Last Seen Dates**"];
+        let newStatusMessageBuilder = [];
+
+        if (this.statusErrorMessage != null) {
+            newStatusMessageBuilder.push(`:warning: **${this.statusErrorMessage}** :warning:`);
+            newStatusMessageBuilder.push(":warning: **The below data is probably incorrect** :warning:\n");
+            this.statusErrorMessage = null;
+        }
+
+        newStatusMessageBuilder.push("**Roles and their Last Seen Dates**");
         newStatusMessageBuilder.push(`${onlineAdmin ? ":green_square:" : ":red_square:"} ${this.rankEmoji("Admin")} Admin: ${onlineAdmin ? `${escapeMarkdown(onlineAdmin)}` : `${this.timestamp(this.lastSeenData.admin)}`}`);
         newStatusMessageBuilder.push(`${onlineMod ? ":green_square:" : ":red_square:"} ${this.rankEmoji("Mod")} Mod: ${onlineMod ? `${escapeMarkdown(onlineMod)}` : `${this.timestamp(this.lastSeenData.mod)}`}`);
         newStatusMessageBuilder.push(`${onlineConductor ? ":green_square:" : ":red_square:"} ${this.rankEmoji("Conductor")} Conductor: ${onlineConductor ? `${escapeMarkdown(onlineConductor)}` : `${this.timestamp(this.lastSeenData.conductor)}`}`);
