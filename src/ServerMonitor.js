@@ -164,7 +164,7 @@ export default class ServerMonitor {
             newStatusMessageBuilder.push(staffMemberMessage);
         }
 
-        newStatusMessageBuilder.push(`\nNext update in ${this.timestamp(Date.now() + config.check_interval)}`);
+        newStatusMessageBuilder.push(`\nNext update ${this.timestamp(Date.now() + parseInt(config.check_interval))}`);
 
         // Because of rate limits and things we're going to spread this out over multiple messages
         // If you want to preserve your brain stop reading now
