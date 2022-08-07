@@ -29,7 +29,7 @@ export default class ServerMonitor {
 
     async checkServer() {
         const { data: staffData } = await axios.get(`https://script.google.com/macros/s/AKfycbwde4vwt0l4_-qOFK_gL2KbVAdy7iag3BID8NWu2DQ1566kJlqyAS1Y/exec?spreadsheetId=${config.player_spreadsheet_id}&sheetName=${config.player_spreadsheet_sheet_name}`);
-        
+
         // In an ideal world we'd be able to just mcUtil.queryFull() and get everyone who's supposed to be visible
         // But due to some sort of stupid shite only mcUtil.status() seems to exclude vanished players
         // And mcUtil.status() only returns up to 12 players
@@ -101,7 +101,7 @@ export default class ServerMonitor {
         let adminDeadzoneLength
         let modDeadzoneLength;
         let conductorDeadzoneLength;
-        
+
         if (foundAdmin) {
             if (Date.now() > parseInt(parseInt(this.lastSeenData.admin) + adminDeadzoneTime)) {
                 pinging.push(config.admin_ping_role);
@@ -164,10 +164,12 @@ export default class ServerMonitor {
             newStatusMessageBuilder.push(staffMemberMessage);
         }
 
+        newStatusMessageBuilder.push(`\nNext update ${this.timestamp(Date.now() + parseInt(config.check_interval))}`);
+
         // Because of rate limits and things we're going to spread this out over multiple messages
         // If you want to preserve your brain stop reading now
         const statusMessages = Array.from((await statusChannel.messages.fetch({ limit: 10 })).values()).reverse();
-        
+
         let currentMessageBuffer = [];
 
         for (const line of newStatusMessageBuilder) {
@@ -178,7 +180,7 @@ export default class ServerMonitor {
                 }
                 else statusChannel.send(currentMessageBuffer.join("\n"));
                 currentMessageBuffer = [];
-            } 
+            }
             currentMessageBuffer.push(line);
         }
 
