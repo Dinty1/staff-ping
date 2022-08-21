@@ -1,0 +1,10 @@
+on: push
+branches: [dockah] # CHANGE TO MAIN WHEN MERGING
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build Image
+        run: docker build --tag staffping:latest .
+      - name: Export Image to .tar file
+        run: docker save -i ./image.tar staffping:latest
