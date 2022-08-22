@@ -174,7 +174,7 @@ export default class ServerMonitor {
         let currentMessageBuffer = [];
 
         for (const line of newStatusMessageBuilder) {
-            if (currentMessageBuffer.join("\n").length + line.length > 2000) {
+            if (currentMessageBuffer.join("\n").length + line.length >= 2000) {
                 if (statusMessages[0]) {
                     statusMessages[0].edit(currentMessageBuffer.join("\n"));
                     statusMessages.shift();
