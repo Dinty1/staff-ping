@@ -37,9 +37,10 @@ export default class ServerMonitor {
         // Not 100% reliable but probably the best we can do
         // Fuck you Mojang <3
         const { data: dynmapData } = await axios.get("https://dynmap.minecartrapidtransit.net/standalone/dynmap_new.json");
-        const server = await mcUtil.status("minecartrapidtransit.net");
+        const server = await mcUtil.status("minecartrapidtransit.net")
+            .catch(weDealWithThisLater => {});
 
-        if (!server.players.sample || !dynmapData || !dynmapData.players) {
+        if (!server || !server.players.sample || !dynmapData || !dynmapData.players) {
             this.statusErrorMessage = "Unable to find players on the server";
             return;
         }
