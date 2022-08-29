@@ -36,7 +36,8 @@ export default class ServerMonitor {
         // So we need to get our info off dynmap and then run mcUtil.status() to see if we can pick up any stragglers who might be hidden on dynmap
         // Not 100% reliable but probably the best we can do
         // Fuck you Mojang <3
-        const { data: dynmapData } = await axios.get("https://dynmap.minecartrapidtransit.net/standalone/dynmap_new.json");
+        const { data: dynmapData } = await axios.get("https://dynmap.minecartrapidtransit.net/standalone/dynmap_new.json")
+            .catch(weDealWithThisLater => {});
         const server = await mcUtil.status("minecartrapidtransit.net")
             .catch(weDealWithThisLater => {});
 
