@@ -2,6 +2,7 @@ import { Client, Intents, MessageActionRow, MessageButton } from "discord.js";
 import { config as dotenvConfig } from "dotenv";
 import ServerMonitor from "./ServerMonitor.js";
 import fs from "fs";
+import * as logger from "./util/log.js";
 
 dotenvConfig();
 
@@ -13,7 +14,7 @@ const client = new Client({ intents: intents });
 export const config = JSON.parse(fs.readFileSync("./config.json"));
 
 client.on("ready", () => {
-    console.info("Client logged in as " + client.user.tag);
+    logger.info("Client logged in as " + client.user.tag);
     new ServerMonitor(client).run();
     /*
     const row = new MessageActionRow();
