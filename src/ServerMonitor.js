@@ -30,7 +30,6 @@ export default class ServerMonitor {
 
     async checkServer() {
         try {
-            logger.info("Checking server status");
             const { data: staffData } = await axios.get(`https://script.google.com/macros/s/AKfycbwde4vwt0l4_-qOFK_gL2KbVAdy7iag3BID8NWu2DQ1566kJlqyAS1Y/exec?spreadsheetId=${config.player_spreadsheet_id}&sheetName=${config.player_spreadsheet_sheet_name}`);
 
             // In an ideal world we'd be able to just mcUtil.queryFull() and get everyone who's supposed to be visible
