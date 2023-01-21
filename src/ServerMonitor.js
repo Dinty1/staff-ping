@@ -21,9 +21,8 @@ export default class ServerMonitor {
     async run() {
         this.lastSeenDataMessage = (await this.client.channels.cache.get(config.last_seen_storage_channel).messages.fetch({ limit: 1 })).first();
 
-        if (this.lastSeenDataMessage.content.length > 1900) this.client.channels.cache.get(config.private_stuff_channel).send("Last seen data is getting near to 2000 characters");
-
         this.lastSeenData = JSON.parse(this.lastSeenDataMessage.content);
+
         this.checkServer();
         setInterval(() => this.checkServer(), config.check_interval);
     }
@@ -31,6 +30,19 @@ export default class ServerMonitor {
     async checkServer() {
         try {
             const { data: staffData } = await axios.get(`https://script.google.com/macros/s/AKfycbwde4vwt0l4_-qOFK_gL2KbVAdy7iag3BID8NWu2DQ1566kJlqyAS1Y/exec?spreadsheetId=${config.player_spreadsheet_id}&sheetName=${config.player_spreadsheet_sheet_name}`);
+
+            if (this.lastSeenDataMessage.content.length > 1900) {
+                let purged = [];
+                for (const player of Object.keys(this.lastSeenData)) {
+                    if (["conductor", "mod", "admin"].includes(player)) continue;
+                    if (staffData.map(s => s.UUID).includes(player)) continue;
+
+                    purged.push(player);
+                    delete this.lastSeenData[player];
+                }
+
+                this.client.channels.cache.get(config.private_stuff_channel).send("Last seen data getting near to 2000 characters. Purged the following redundant entries: " + purged);
+            }
 
             // In an ideal world we'd be able to just mcUtil.queryFull() and get everyone who's supposed to be visible
             // But due to some sort of stupid shite only mcUtil.status() seems to exclude vanished players
