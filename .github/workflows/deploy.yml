@@ -7,18 +7,17 @@ jobs:
     steps:
       - name: Check Out
         uses: actions/checkout@v3
-      - name: Insert .env File
-        run: echo "TOKEN=${{ secrets.BOT_TOKEN }}" > .env
       - name: Build Image
         run: docker build --tag staffping:latest .
-      - name: Export Image to .tar File
-        run: docker save -o ./staffping.tar staffping:latest
-      - name: Copy File to Server
-        uses: appleboy/scp-action@master
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USERNAME }}
-          key: ${{ secrets.VPS_KEY }}
-          port: 22
-          source: "staffping.tar"
-          target: "images"
+      - name: Tag Image
+        run: docker image tag staffping ${{ secrets.VPS_HOST }}:5000/staffping
+      - name: Add Insecure Registry
+        run: |
+          sed -i "s/HOST/${{ secrets.VPS_HOST }}/" ./.github/workflows/deploy/docker-daemon-config.json
+          sudo cp ./.github/workflows/deploy/docker-daemon-config.json /etc/docker/daemon.json
+          sudo systemctl daemon-reload
+          sudo systemctl restart docker
+      - name: Login to Registry
+        run: echo ${{ secrets.REGISTRY_PASSWORD }} | docker login -u ${{ secrets.REGISTRY_USERNAME }} --password-stdin http://${{ secrets.VPS_HOST }}:5000
+      - name: Push to Registry
+        run: docker push ${{ secrets.VPS_HOST }}:5000/staffping
