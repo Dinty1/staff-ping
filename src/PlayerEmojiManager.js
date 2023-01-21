@@ -34,11 +34,13 @@ export default class PlayerEmojiManager {
             // Then go through staff members and see what needs to be updated
             for (const staffMember of staffData) {
                 let emoji = emojis.find(e => e.name == staffMember.Name);
-                let { data: currentSkin } = await axios.get("https://crafatar.com/avatars/" + staffMember.UUID, { responseType: "arraybuffer" });
 
                 if (emoji && refreshCurrent) await this.guild.emojis.delete(emoji); // Too hard to compare skins with diff compression so just delete and recreate every so often
 
-                if ((emoji && refreshCurrent) || !emoji) await this.guild.emojis.create(Buffer.from(currentSkin, "base64"), staffMember.Name);
+                if ((emoji && refreshCurrent) || !emoji) {
+                    let { data: currentSkin } = await axios.get("https://crafatar.com/avatars/" + staffMember.UUID, { responseType: "arraybuffer" });
+                    await this.guild.emojis.create(Buffer.from(currentSkin, "base64"), staffMember.Name);
+                }
             }
             res();
         })

@@ -10,8 +10,6 @@ export default class ServerMonitor {
 
     emojis;
 
-    staffDataCache;
-
     lastSeenDataMessage;
     lastSeenData;
 
@@ -36,9 +34,7 @@ export default class ServerMonitor {
         try {
             const { data: staffData } = await axios.get(`https://script.google.com/macros/s/AKfycbwde4vwt0l4_-qOFK_gL2KbVAdy7iag3BID8NWu2DQ1566kJlqyAS1Y/exec?spreadsheetId=${config.player_spreadsheet_id}&sheetName=${config.player_spreadsheet_sheet_name}`);
 
-            if (staffData != this.staffDataCache && this.staffDataCache) await this.playerEmojiManager.updateEmojis(false);
-
-            this.staffDataCache = staffData;
+            await this.playerEmojiManager.updateEmojis(false);
 
             this.emojis = await this.client.guilds.cache.get(config.guild).emojis.fetch();
 
