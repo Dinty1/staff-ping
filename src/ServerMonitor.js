@@ -125,7 +125,7 @@ export default class ServerMonitor {
                 }
             }
 
-            this.updateStatusMessage(foundConductor, foundMod, foundAdmin, onlineStaff, staffData);
+            this.updateStatusMessage(onlineStaff, staffData);
 
             if (!onlinePerson) return; // No people so no need to do stuff
 
@@ -184,7 +184,7 @@ export default class ServerMonitor {
         this.lastSeenDataMessage.edit(JSON.stringify(this.lastSeenData));
     }
 
-    async updateStatusMessage(onlineConductor, onlineMod, onlineAdmin, onlineStaff, staffData) {
+    async updateStatusMessage(onlineStaff, staffData) {
         const statusChannel = this.client.channels.cache.get(config.status_channel);
 
         let newStatusMessageBuilder = [];
@@ -196,11 +196,27 @@ export default class ServerMonitor {
             this.statusErrorMessage = null;
             error = true;
         } else {
+            let onlineAdmins = [];
+            let onlineMods = [];
+            let onlineConductors = [];
+
+
+            for (const staffMember of staffData) {
+                if (!onlineStaff.includes(staffMember)) continue;
+                switch (staffMember.Rank) {
+                    case "Admin":
+                        onlineAdmins.push(this.playerEmoji(staffMember.Name))
+                    case "Mod":
+                        onlineMods.push(this.playerEmoji(staffMember.Name))
+                    case "Conductor":
+                        onlineConductors.push(this.playerEmoji(staffMember.Name))
+                }
+            }
 
             newStatusMessageBuilder.push("**Roles and their Last Seen Dates**");
-            newStatusMessageBuilder.push(`${onlineAdmin ? ":green_square:" : ":red_square:"} ${this.rankEmoji("Admin")} Admin: ${onlineAdmin ? `${escapeMarkdown(onlineAdmin)}` : `${this.timestamp(this.lastSeenData.admin)}`}`);
-            newStatusMessageBuilder.push(`${onlineMod ? ":green_square:" : ":red_square:"} ${this.rankEmoji("Mod")} Mod: ${onlineMod ? `${escapeMarkdown(onlineMod)}` : `${this.timestamp(this.lastSeenData.mod)}`}`);
-            newStatusMessageBuilder.push(`${onlineConductor ? ":green_square:" : ":red_square:"} ${this.rankEmoji("Conductor")} Conductor: ${onlineConductor ? `${escapeMarkdown(onlineConductor)}` : `${this.timestamp(this.lastSeenData.conductor)}`}`);
+            newStatusMessageBuilder.push(`${onlineAdmins.length > 0 ? ":green_square:" : ":red_square:"} ${this.rankEmoji("Admin")} Admin: ${onlineAdmins.length > 0 ? `${onlineAdmins.join(" ")}` : `${this.timestamp(this.lastSeenData.admin)}`}`);
+            newStatusMessageBuilder.push(`${onlineMods.length > 0 ? ":green_square:" : ":red_square:"} ${this.rankEmoji("Mod")} Mod: ${onlineMods.length > 0 ? `${onlineMods.join(" ")}` : `${this.timestamp(this.lastSeenData.mod)}`}`);
+            newStatusMessageBuilder.push(`${onlineConductors.length > 0 ? ":green_square:" : ":red_square:"} ${this.rankEmoji("Conductor")} Conductor: ${onlineConductors.length > 0 ? `${onlineConductors.join(" ")}` : `${this.timestamp(this.lastSeenData.conductor)}`}`);
 
             newStatusMessageBuilder.push(`\n**Staff/Conductors and their Last Seen Dates**`);
             for (const staffMember of staffData) {
