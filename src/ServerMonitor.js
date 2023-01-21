@@ -254,7 +254,7 @@ export default class ServerMonitor {
             else statusChannel.send(currentMessageBuffer.join("\n"));
         }
 
-        if (!error) statusMessages.forEach(m => m.delete()); // Anything left over is spare and can go, but only check if there isn't an error
+        if (!error) statusMessages.forEach(m => m.edit("​")); // Anything left over is spare, but only check if there isn't an error
         else statusMessages.forEach(m => m.edit(":warning:")); // Do this if there is an error
     }
 
