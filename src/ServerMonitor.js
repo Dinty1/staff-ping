@@ -164,7 +164,7 @@ export default class ServerMonitor {
 
             if (pinging.length == 0) return; // No deadzones ended
 
-            let outputMessage = `${pinging.map(r => "<@&" + r + ">").join(" ")} ${playerEmoji(onlinePerson)} **${escapeMarkdown(onlinePerson)}** has joined! Deadzones ended:`;
+            let outputMessage = `${pinging.map(r => "<@&" + r + ">").join(" ")} ${this.playerEmoji(onlinePerson)} **${escapeMarkdown(onlinePerson)}** has joined! Deadzones ended:`;
 
             if (adminDeadzoneLength) outputMessage += `\n**Admin:** ${prettyMilliseconds(adminDeadzoneLength, { verbose: true })}`;
             if (modDeadzoneLength) outputMessage += `\n**Mod:** ${prettyMilliseconds(modDeadzoneLength, { verbose: true })}`;
