@@ -38,7 +38,7 @@ export default class PlayerEmojiManager {
                 if (emoji && refreshCurrent) await this.guild.emojis.delete(emoji); // Too hard to compare skins with diff compression so just delete and recreate every so often
 
                 if ((emoji && refreshCurrent) || !emoji) {
-                    let { data: currentSkin } = await axios.get("https://crafatar.com/avatars/" + staffMember.UUID, { responseType: "arraybuffer" });
+                    let { data: currentSkin } = await axios.get("https://crafatar.com/avatars/" + staffMember.UUID + "?overlay", { responseType: "arraybuffer" });
                     await this.guild.emojis.create(Buffer.from(currentSkin, "base64"), staffMember.Name);
                 }
             }
