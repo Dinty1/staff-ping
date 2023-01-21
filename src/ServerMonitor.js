@@ -8,14 +8,19 @@ import * as logger from "./util/log.js";
 export default class ServerMonitor {
     client;
 
+    emojis;
+
+    staffDataCache;
+
     lastSeenDataMessage;
     lastSeenData;
 
     statusErrorMessage = null;
     statusErrorSince = 0;
 
-    constructor(client) {
+    constructor(client, playerEmojiManager) {
         this.client = client;
+        this.playerEmojiManager = playerEmojiManager;
     }
 
     async run() {
@@ -31,14 +36,20 @@ export default class ServerMonitor {
         try {
             const { data: staffData } = await axios.get(`https://script.google.com/macros/s/AKfycbwde4vwt0l4_-qOFK_gL2KbVAdy7iag3BID8NWu2DQ1566kJlqyAS1Y/exec?spreadsheetId=${config.player_spreadsheet_id}&sheetName=${config.player_spreadsheet_sheet_name}`);
 
-            if (this.lastSeenDataMessage.content.length > 1900) {
-                let purged = [];
-                for (const player of Object.keys(this.lastSeenData)) {
-                    if (["conductor", "mod", "admin"].includes(player)) continue;
-                    if (staffData.map(s => s.UUID).includes(player)) continue;
+            if (staffData != this.staffDataCache && this.staffDataCache) await this.playerEmojiManager.updateEmojis(false);
 
-                    purged.push(player);
-                    delete this.lastSeenData[player];
+            this.staffDataCache = staffData;
+
+            this.emojis = await this.client.guilds.cache.get(config.guild).emojis.fetch();
+
+            if (JSON.stringify(this.lastSeenData).length > 1900) {
+                let purged = [];
+                for (const entry of Object.keys(this.lastSeenData)) {
+                    if (["conductor", "mod", "admin"].includes(entry)) continue;
+                    if (staffData.map(s => s.UUID).includes(entry)) continue;
+
+                    purged.push(entry);
+                    delete this.lastSeenData[entry];
                 }
 
                 this.client.channels.cache.get(config.private_stuff_channel).send("Last seen data getting near to 2000 characters. Purged the following redundant entries: " + purged);
@@ -153,7 +164,7 @@ export default class ServerMonitor {
 
             if (pinging.length == 0) return; // No deadzones ended
 
-            let outputMessage = `${pinging.map(r => "<@&" + r + ">").join(" ")} **${escapeMarkdown(onlinePerson)}** has joined! Deadzones ended:`;
+            let outputMessage = `${pinging.map(r => "<@&" + r + ">").join(" ")} ${playerEmoji(onlinePerson)} **${escapeMarkdown(onlinePerson)}** has joined! Deadzones ended:`;
 
             if (adminDeadzoneLength) outputMessage += `\n**Admin:** ${prettyMilliseconds(adminDeadzoneLength, { verbose: true })}`;
             if (modDeadzoneLength) outputMessage += `\n**Mod:** ${prettyMilliseconds(modDeadzoneLength, { verbose: true })}`;
@@ -193,7 +204,7 @@ export default class ServerMonitor {
 
             newStatusMessageBuilder.push(`\n**Staff/Conductors and their Last Seen Dates**`);
             for (const staffMember of staffData) {
-                let staffMemberMessage = `${onlineStaff.includes(staffMember) ? ":green_square:" : ":red_square:"} ${this.rankEmoji(staffMember.Rank)} ${escapeMarkdown(staffMember.Name)}${onlineStaff.includes(staffMember) ? "" : `: ${this.lastSeenData[staffMember.UUID] ? this.timestamp(this.lastSeenData[staffMember.UUID]) : ":shrug:"}`}`;
+                let staffMemberMessage = `${onlineStaff.includes(staffMember) ? ":green_square:" : ":red_square:"} ${this.rankEmoji(staffMember.Rank)} ${this.playerEmoji(staffMember.Name)} ${escapeMarkdown(staffMember.Name)}${onlineStaff.includes(staffMember) ? "" : `: ${this.lastSeenData[staffMember.UUID] ? this.timestamp(this.lastSeenData[staffMember.UUID]) : ":shrug:"}`}`;
 
                 newStatusMessageBuilder.push(staffMemberMessage);
             }
@@ -241,5 +252,9 @@ export default class ServerMonitor {
             case "Mod": return "<:Mod:997944804518395994>";
             case "Conductor": return "<:Conductor:997944814295334913>";
         }
+    }
+
+    playerEmoji(player) {
+        return this.emojis.find(e => e.name == player);
     }
 }

@@ -3,6 +3,7 @@ import { config as dotenvConfig } from "dotenv";
 import ServerMonitor from "./ServerMonitor.js";
 import fs from "fs";
 import * as logger from "./util/log.js";
+import PlayerEmojiManager from "./PlayerEmojiManager.js";
 
 dotenvConfig();
 
@@ -15,7 +16,9 @@ export const config = JSON.parse(fs.readFileSync("./config.json"));
 
 client.on("ready", () => {
     logger.info("Client logged in as " + client.user.tag);
-    new ServerMonitor(client).run();
+    let emojiManager = new PlayerEmojiManager(client);
+    emojiManager.run();
+    new ServerMonitor(client, emojiManager).run();
     /*
     const row = new MessageActionRow();
     row.addComponents(new MessageButton().setCustomId("subscribe-conductor").setLabel("Conductor").setStyle("PRIMARY"));

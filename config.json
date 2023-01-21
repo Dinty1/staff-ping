@@ -11,5 +11,7 @@
     "conductor_ping_role": "995334097549402112",
     "ping_channel": "811724570108100679",
     "status_channel": "995365076875874494",
-    "private_stuff_channel": "815006588166340618"
+    "private_stuff_channel": "815006588166340618",
+    "player_emojis_update_interval": "604800000",
+    "guild": "811723441828134952"
 }
