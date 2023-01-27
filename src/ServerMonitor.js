@@ -59,15 +59,12 @@ export default class ServerMonitor {
             // Fuck you Mojang <3
             let dynmapData;
             let server;
-            try {
-                dynmapData = (await axios.get("https://dynmap.minecartrapidtransit.net/standalone/dynmap_new.json")
-                    .catch(error => { throw new Error("Unable to fetch online players from dynmap") }))
-                    .data;
-                server = await mcUtil.status("minecartrapidtransit.net")
-                    .catch(error => { throw new Error("Unable to fetch online players from the server") });
-            } catch (error) {
-                throw new Error("Unable to fetch players on the server");
-            }
+            dynmapData = (await axioss.get("https://dynmap.minecartrapidtransit.net/standalone/dynmap_new.json")
+                .catch(error => { throw new Error(error) }))
+                .data;
+            server = await mcUtil.status("minecartrapidtransit.net")
+                .catch(error => { throw new Error(error) });
+
 
             // This might or might not be necessary idk
             if (!server || !server.players || !dynmapData || !dynmapData.players) {
@@ -172,6 +169,7 @@ export default class ServerMonitor {
             this.statusErrorMessage = error;
             if (this.statusErrorSince == 0) this.statusErrorSince = Date.now();
             logger.error("Error doing status check: " + error);
+            if (error.stack) logger.error(error.stack);
             this.updateStatusMessage();
         }
     }
