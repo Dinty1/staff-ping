@@ -76,6 +76,7 @@ client.login(process.env.TOKEN);
 if (!process.env.DEV) {
     // We're being asked to shut down
     process.once("SIGTERM", () => {
+        info("SIGTERM received. Gracefully shutting down.");
         client.user.setStatus("invisible");
         // Can't await but probably gonna take a small while
         setTimeout(() => process.exit(), 2000)
