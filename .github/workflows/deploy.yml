@@ -11,13 +11,7 @@ jobs:
         run: docker build --tag staffping:latest .
       - name: Tag Image
         run: docker image tag staffping ${{ secrets.VPS_HOST }}:5000/staffping
-      - name: Add Insecure Registry
-        run: |
-          sed -i "s/HOST/${{ secrets.VPS_HOST }}/" ./.github/workflows/deploy/docker-daemon-config.json
-          sudo cp ./.github/workflows/deploy/docker-daemon-config.json /etc/docker/daemon.json
-          sudo systemctl daemon-reload
-          sudo systemctl restart docker
       - name: Login to Registry
-        run: echo ${{ secrets.REGISTRY_PASSWORD }} | docker login -u ${{ secrets.REGISTRY_USERNAME }} --password-stdin http://${{ secrets.VPS_HOST }}:5000
+        run: echo ${{ secrets.REGISTRY_PASSWORD }} | docker login -u ${{ secrets.REGISTRY_USERNAME }} --password-stdin https://${{ secrets.VPS_HOST }}:5000
       - name: Push to Registry
         run: docker push ${{ secrets.VPS_HOST }}:5000/staffping

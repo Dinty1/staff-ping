@@ -1,6 +1,0 @@
-{
-    "insecure-registries":
-    [
-        "HOST:5000"
-    ]
-}
