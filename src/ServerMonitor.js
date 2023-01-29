@@ -13,6 +13,9 @@ export default class ServerMonitor {
     lastSeenDataMessage;
     lastSeenData;
 
+    onlineSinceDataMessage;
+    onlineSinceData;
+
     statusErrorMessage = null;
     statusErrorSince = 0;
 
@@ -23,8 +26,10 @@ export default class ServerMonitor {
 
     async run() {
         this.lastSeenDataMessage = (await this.client.channels.cache.get(config.last_seen_storage_channel).messages.fetch({ limit: 1 })).first();
+        this.onlineSinceDataMessage = (await this.client.channels.cache.get(config.online_since_storage_channel).messages.fetch({ limit: 1 })).first();
 
         this.lastSeenData = JSON.parse(this.lastSeenDataMessage.content);
+        this.onlineSinceData = JSON.parse(this.onlineSinceDataMessage.content);
 
         this.checkServer();
         setInterval(() => this.checkServer(), config.check_interval);
@@ -91,6 +96,10 @@ export default class ServerMonitor {
                 if (onlineIds.includes(staffMember.UUID)) {
                     this.lastSeenData[staffMember.UUID] = Date.now();
                     onlineStaff.push(staffMember);
+
+                    if (!this.onlineSinceData[staffMember.UUID]) this.onlineSinceData[staffMember.UUID] = Date.now();
+                } else if (this.onlineSinceData[staffMember.UUID]) { // Not online anymore
+                    delete this.onlineSinceData[staffMember.UUID];
                 }
             }
 
@@ -153,7 +162,7 @@ export default class ServerMonitor {
                 this.lastSeenData.conductor = Date.now();
             }
 
-            this.saveLastSeenData();
+            this.saveData();
 
             if (pinging.length == 0) return; // No deadzones ended
 
@@ -174,8 +183,9 @@ export default class ServerMonitor {
         }
     }
 
-    async saveLastSeenData() {
+    async saveData() {
         this.lastSeenDataMessage.edit(JSON.stringify(this.lastSeenData));
+        this.onlineSinceDataMessage.edit(JSON.stringify(this.onlineSinceData));
     }
 
     async updateStatusMessage(onlineStaff, staffData) {
@@ -214,7 +224,7 @@ export default class ServerMonitor {
 
             newStatusMessageBuilder.push(`\n**Staff/Conductors and their Last Seen Dates**`);
             for (const staffMember of staffData) {
-                let staffMemberMessage = `${onlineStaff.includes(staffMember) ? ":green_square:" : ":red_square:"} ${this.rankEmoji(staffMember.Rank)} ${this.playerEmoji(staffMember.Name)} ${escapeMarkdown(staffMember.Name)}${onlineStaff.includes(staffMember) ? "" : `: ${this.lastSeenData[staffMember.UUID] ? this.timestamp(this.lastSeenData[staffMember.UUID]) : ":shrug:"}`}`;
+                let staffMemberMessage = `${onlineStaff.includes(staffMember) ? ":green_square:" : ":red_square:"} ${this.rankEmoji(staffMember.Rank)} ${this.playerEmoji(staffMember.Name)} ${escapeMarkdown(staffMember.Name)}${onlineStaff.includes(staffMember) ? ": joined " + this.timestamp(this.onlineSinceData[staffMember.UUID]) : `: ${this.lastSeenData[staffMember.UUID] ? this.timestamp(this.lastSeenData[staffMember.UUID]) : ":shrug:"}`}`;
 
                 newStatusMessageBuilder.push(staffMemberMessage);
             }
