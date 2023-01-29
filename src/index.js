@@ -78,6 +78,6 @@ if (!process.env.DEV) {
     process.once("SIGTERM", () => {
         client.user.setStatus("invisible");
         // Can't await but probably gonna take a small while
-        setTimeout(() => process.exit(), 1000)
+        setTimeout(() => process.exit(), 2000)
     })
 }
