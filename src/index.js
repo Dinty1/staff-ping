@@ -72,3 +72,12 @@ function replyToPreferenceUpdateWithCurrentPreferences(i) {
 }
 
 client.login(process.env.TOKEN);
+
+if (!process.env.DEV) {
+    // We're being asked to shut down
+    process.once("SIGTERM", () => {
+        client.user.setStatus("invisible");
+        // Can't await but probably gonna take a small while
+        setTimeout(() => process.exit(), 1000)
+    })
+}
