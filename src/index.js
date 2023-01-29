@@ -4,6 +4,7 @@ import ServerMonitor from "./ServerMonitor.js";
 import fs from "fs";
 import * as logger from "./util/log.js";
 import PlayerEmojiManager from "./PlayerEmojiManager.js";
+import LeaveListener from "./LeaveListener.js";
 
 dotenvConfig();
 
@@ -19,6 +20,7 @@ client.on("ready", () => {
     let emojiManager = new PlayerEmojiManager(client);
     emojiManager.run();
     new ServerMonitor(client, emojiManager).run();
+    new LeaveListener(client);
     /*
     const row = new MessageActionRow();
     row.addComponents(new MessageButton().setCustomId("subscribe-conductor").setLabel("Conductor").setStyle("PRIMARY"));
