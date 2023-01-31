@@ -78,7 +78,7 @@ client.login(process.env.TOKEN);
 if (!process.env.DEV) {
     // We're being asked to shut down
     process.once("SIGTERM", async () => {
-        info("SIGTERM received. Gracefully shutting down.");
+        logger.info("SIGTERM received. Gracefully shutting down.");
         client.user.setStatus("invisible");
         await client.channels.cache.get(config.private_stuff_channel).send("SIGTERM received. Probably updating...");
         // Can't await the status thing but probably gonna take a small while
