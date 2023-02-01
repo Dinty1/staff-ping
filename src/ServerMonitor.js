@@ -129,6 +129,9 @@ export default class ServerMonitor {
 
             this.updateStatusMessage(onlineStaff, staffData);
 
+            this.saveData();
+            this.statusErrorSince = 0;
+
             if (!onlinePerson) return; // No people so no need to do stuff
 
             const pinging = [];
@@ -161,9 +164,6 @@ export default class ServerMonitor {
                 }
                 this.lastSeenData.conductor = Date.now();
             }
-
-            this.saveData();
-            this.statusErrorSince = 0;
 
             if (pinging.length == 0) return; // No deadzones ended
 
