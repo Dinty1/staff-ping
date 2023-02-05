@@ -67,7 +67,7 @@ export default class ServerMonitor {
             dynmapData = (await axios.get("https://dynmap.minecartrapidtransit.net/standalone/dynmap_new.json")
                 .catch(error => { throw error }))
                 .data;
-            server = await mcUtil.status("minecartrapidtransit.net")
+            server = await mcUtil.status("minecartrapidtransit.net", 25565, { timeout: 10000 })
                 .catch(error => { throw error });
 
 
