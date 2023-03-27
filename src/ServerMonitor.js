@@ -129,7 +129,7 @@ export default class ServerMonitor {
 
             this.updateStatusMessage(onlineStaff, staffData);
 
-            this.saveData();
+            await this.saveData();
             this.statusErrorSince = 0;
 
             if (!onlinePerson) return; // No people so no need to do stuff
@@ -179,13 +179,20 @@ export default class ServerMonitor {
             if (this.statusErrorSince == 0) this.statusErrorSince = Date.now();
             logger.error("Error doing status check: " + error);
             if (error.stack) logger.error(error.stack);
-            this.updateStatusMessage();
+            try {
+                this.updateStatusMessage();
+            } catch (ignored) {
+                // If we don't ignore this failing then we'll just end up with an infinite loop
+            }
         }
     }
 
     async saveData() {
-        this.lastSeenDataMessage.edit(JSON.stringify(this.lastSeenData));
-        this.onlineSinceDataMessage.edit(JSON.stringify(this.onlineSinceData));
+        return new Promise(async (res, rej) => {
+            await this.lastSeenDataMessage.edit(JSON.stringify(this.lastSeenData));
+            await this.onlineSinceDataMessage.edit(JSON.stringify(this.onlineSinceData));
+            res();
+        })
     }
 
     async updateStatusMessage(onlineStaff, staffData) {
