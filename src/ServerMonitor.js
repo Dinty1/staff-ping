@@ -10,11 +10,9 @@ export default class ServerMonitor {
 
     emojis;
 
-    lastSeenDataMessage;
     lastSeenData;
-
-    onlineSinceDataMessage;
     onlineSinceData;
+    otherData;
 
     statusErrorMessage = null;
     statusErrorSince = 0;
@@ -25,19 +23,81 @@ export default class ServerMonitor {
     }
 
     async run() {
-        this.lastSeenDataMessage = (await this.client.channels.cache.get(config.last_seen_storage_channel).messages.fetch({ limit: 1 })).first();
-        this.onlineSinceDataMessage = (await this.client.channels.cache.get(config.online_since_storage_channel).messages.fetch({ limit: 1 })).first();
+        this.lastSeenData = await this.getData(config.last_seen_storage_channel);
+        this.onlineSinceData = await this.getData(config.online_since_storage_channel);
+        this.otherData = await this.getData(config.other_data_storage_channel);
 
-        this.lastSeenData = JSON.parse(this.lastSeenDataMessage.content);
-        this.onlineSinceData = JSON.parse(this.onlineSinceDataMessage.content);
+        if (!this.otherData.lastRankNag) this.otherData.lastRankNag = 0;
 
         this.checkServer();
         setInterval(() => this.checkServer(), config.check_interval);
     }
 
+    async getData(channel) {
+        return new Promise(async (res) => {
+            const messages = await this.client.channels.cache.get(channel).messages.fetch({ limit: 1 });
+            if (messages.size == 0) { // This might cause issues later idk
+                await this.client.channels.cache.get(channel).send("{}");
+                return res({});
+            }
+            res(JSON.parse(messages.first().content));
+        })
+    }
+
+    getSpreadsheet(id, sheet) {
+        return axios.get(`https://script.google.com/macros/s/AKfycbwde4vwt0l4_-qOFK_gL2KbVAdy7iag3BID8NWu2DQ1566kJlqyAS1Y/exec?spreadsheetId=${id}&sheetName=${sheet}`)
+    }
+
     async checkServer() {
         try {
-            const { data: staffData } = await axios.get(`https://script.google.com/macros/s/AKfycbwde4vwt0l4_-qOFK_gL2KbVAdy7iag3BID8NWu2DQ1566kJlqyAS1Y/exec?spreadsheetId=${config.player_spreadsheet_id}&sheetName=${config.player_spreadsheet_sheet_name}`);
+            const { data: staffData } = await this.getSpreadsheet(config.player_spreadsheet_id, config.player_spreadsheet_sheet_name);
+
+            if (this.otherData.lastRankNag + config.rank_check_interval < Date.now()) {
+                const {data: members} = await this.getSpreadsheet(config.member_list_spreadsheet, config.member_list_rank_sheet);
+                let rankCounts = {
+                    conductor: 0,
+                    mod: 0,
+                    admin: 0
+                }
+
+                for (const member of members) {
+                    switch (member.Rank) {
+                        case "Conductor":
+                            rankCounts.conductor++;
+                            break;
+                        case "Moderator":
+                            rankCounts.mod++;
+                            break;
+                        case "Owner":
+                        case "Administrator":
+                            rankCounts.admin++;
+                    }
+                }
+
+                let currentlyConfiguredRankCounts = {
+                    conductor: 0,
+                    mod: 0,
+                    admin: 0
+                }
+
+                for (const member of staffData) {
+                    switch (member.Rank) {
+                        case "Conductor":
+                            currentlyConfiguredRankCounts.conductor++;
+                            break;
+                        case "Mod":
+                            currentlyConfiguredRankCounts.mod++;
+                            break;
+                        case "Admin":
+                            currentlyConfiguredRankCounts.admin++;
+                    }
+                }
+
+                if (rankCounts != currentlyConfiguredRankCounts) {
+                    this.client.channels.cache.get(config.data_maintainers_channel).send(`Discrepancies between configured ranks and member list:\nOn config: ${JSON.stringify(currentlyConfiguredRankCounts)}\nOn member list: ${JSON.stringify(rankCounts)}`);
+                    this.otherData.lastRankNag = Date.now();
+                }
+            }
 
             await this.playerEmojiManager.updateEmojis(false);
 
@@ -188,11 +248,14 @@ export default class ServerMonitor {
     }
 
     async saveData() {
-        return new Promise(async (res, rej) => {
-            await this.lastSeenDataMessage.edit(JSON.stringify(this.lastSeenData));
-            await this.onlineSinceDataMessage.edit(JSON.stringify(this.onlineSinceData));
-            res();
-        })
+        this.saveDataMessage(config.last_seen_storage_channel, this.lastSeenData);
+        this.saveDataMessage(config.online_since_storage_channel, this.onlineSinceData);
+        this.saveDataMessage(config.other_data_storage_channel, this.otherData);
+    }
+
+    async saveDataMessage(channel, data) {
+        const messages = await this.client.channels.cache.get(channel).messages.fetch({ limit: 1 });
+        messages.first().edit(JSON.stringify(data));
     }
 
     async updateStatusMessage(onlineStaff, staffData) {
