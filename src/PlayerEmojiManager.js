@@ -10,10 +10,6 @@ export default class PlayerEmojiManager {
         this.guild = client.guilds.cache.get(config.guild);
     }
 
-    run() {
-        setInterval(() => this.updateEmojis(true), config.player_emojis_update_interval);
-    }
-
     async updateEmojis(refreshCurrent) {
         return new Promise(async (res, rej) => {
             const { data: staffData } = await axios.get(`https://script.google.com/macros/s/AKfycbwde4vwt0l4_-qOFK_gL2KbVAdy7iag3BID8NWu2DQ1566kJlqyAS1Y/exec?spreadsheetId=${config.player_spreadsheet_id}&sheetName=${config.player_spreadsheet_sheet_name}`);

@@ -27,8 +27,6 @@ export default class ServerMonitor {
         this.onlineSinceData = await this.getData(config.online_since_storage_channel);
         this.otherData = await this.getData(config.other_data_storage_channel);
 
-        if (!this.otherData.lastRankNag) this.otherData.lastRankNag = 0;
-
         this.checkServer();
         setInterval(() => this.checkServer(), config.check_interval);
     }
@@ -52,7 +50,7 @@ export default class ServerMonitor {
         try {
             const { data: staffData } = await this.getSpreadsheet(config.player_spreadsheet_id, config.player_spreadsheet_sheet_name);
 
-            if (this.otherData.lastRankNag + config.rank_check_interval < Date.now()) {
+            if (!this.otherData.lastRankNag || this.otherData.lastRankNag + config.rank_check_interval < Date.now()) {
                 const {data: members} = await this.getSpreadsheet(config.member_list_spreadsheet, config.member_list_rank_sheet);
                 let rankCounts = {
                     conductor: 0,
@@ -99,7 +97,13 @@ export default class ServerMonitor {
                 }
             }
 
-            await this.playerEmojiManager.updateEmojis(false);
+            let refreshCurrent = false;
+            if (!this.otherData.lastFullEmojiRefresh || this.otherData.lastFullEmojiRefresh + config.player_emojis_update_interval < Date.now()) {
+                refreshCurrent = true;
+                this.otherData.lastFullEmojiRefresh = Date.now();
+            }
+            await this.playerEmojiManager.updateEmojis(true);
+            if (refreshCurrent) throw new Error("Performing fortnightly emoji refresh. Back next update."); // No point in continuing since it'll have been a while
 
             this.emojis = await this.client.guilds.cache.get(config.guild).emojis.fetch();
 
