@@ -18,7 +18,6 @@ export const config = JSON.parse(fs.readFileSync("./config.json"));
 client.on("ready", () => {
     logger.info("Client logged in as " + client.user.tag);
     let emojiManager = new PlayerEmojiManager(client);
-    emojiManager.run();
     new ServerMonitor(client, emojiManager).run();
     new LeaveListener(client);
     /*
