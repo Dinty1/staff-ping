@@ -101,9 +101,10 @@ export default class ServerMonitor {
             if (!this.otherData.lastFullEmojiRefresh || this.otherData.lastFullEmojiRefresh + config.player_emojis_update_interval < Date.now()) {
                 refreshCurrent = true;
                 this.otherData.lastFullEmojiRefresh = Date.now();
+                await this.saveData();
             }
-            await this.playerEmojiManager.updateEmojis(true);
-            if (refreshCurrent) throw new Error("Performing fortnightly emoji refresh. Back next update."); // No point in continuing since it'll have been a while
+            await this.playerEmojiManager.updateEmojis(refreshCurrent);
+            if (refreshCurrent) return; // No point in continuing since it'll have been a while
 
             this.emojis = await this.client.guilds.cache.get(config.guild).emojis.fetch();
 
