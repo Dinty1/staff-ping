@@ -91,7 +91,7 @@ export default class ServerMonitor {
                     }
                 }
 
-                if (rankCounts != currentlyConfiguredRankCounts) {
+                if (JSON.stringify(rankCounts) != JSON.stringify(currentlyConfiguredRankCounts)) {
                     this.client.channels.cache.get(config.data_maintainers_channel).send(`Discrepancies between configured ranks and member list:\nOn config: ${JSON.stringify(currentlyConfiguredRankCounts)}\nOn member list: ${JSON.stringify(rankCounts)}`);
                     this.otherData.lastRankNag = Date.now();
                 }
