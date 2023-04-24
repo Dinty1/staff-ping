@@ -91,7 +91,8 @@ export default class ServerMonitor {
                     }
                 }
 
-                if (JSON.stringify(rankCounts) != JSON.stringify(currentlyConfiguredRankCounts)) {
+                if (Object.values(rankCounts).includes(0) || Object.values(currentlyConfiguredRankCounts).includes(0)) logger.error("Spreadsheet prob didn't fetch correctly");
+                else if (JSON.stringify(rankCounts) != JSON.stringify(currentlyConfiguredRankCounts)) {
                     this.client.channels.cache.get(config.data_maintainers_channel).send(`Discrepancies between configured ranks and member list:\nOn config: ${JSON.stringify(currentlyConfiguredRankCounts)}\nOn member list: ${JSON.stringify(rankCounts)}`);
                     this.otherData.lastRankNag = Date.now();
                 }
