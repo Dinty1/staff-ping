@@ -2,6 +2,7 @@ import { config } from "./index.js";
 import axios from "axios";
 import mcUtil from "minecraft-server-util";
 import escapeMarkdown from "./util/escapeMarkdown.js";
+import rankEmoji from "./util/rankEmoji.js";
 import prettyMilliseconds from "pretty-ms";
 import * as logger from "./util/log.js";
 
@@ -294,13 +295,13 @@ export default class ServerMonitor {
             }
 
             newStatusMessageBuilder.push("**Roles and their Last Seen Dates**");
-            newStatusMessageBuilder.push(`${onlineAdmins.length > 0 ? ":green_square:" : ":red_square:"} ${this.rankEmoji("Admin")} Admin: ${onlineAdmins.length > 0 ? `${onlineAdmins.join(" ")}` : `${this.timestamp(this.lastSeenData.admin)}`}`);
-            newStatusMessageBuilder.push(`${onlineMods.length > 0 ? ":green_square:" : ":red_square:"} ${this.rankEmoji("Mod")} Mod: ${onlineMods.length > 0 ? `${onlineMods.join(" ")}` : `${this.timestamp(this.lastSeenData.mod)}`}`);
-            newStatusMessageBuilder.push(`${onlineConductors.length > 0 ? ":green_square:" : ":red_square:"} ${this.rankEmoji("Conductor")} Conductor: ${onlineConductors.length > 0 ? `${onlineConductors.join(" ")}` : `${this.timestamp(this.lastSeenData.conductor)}`}`);
+            newStatusMessageBuilder.push(`${onlineAdmins.length > 0 ? ":green_square:" : ":red_square:"} ${rankEmoji("Admin")} Admin: ${onlineAdmins.length > 0 ? `${onlineAdmins.join(" ")}` : `${this.timestamp(this.lastSeenData.admin)}`}`);
+            newStatusMessageBuilder.push(`${onlineMods.length > 0 ? ":green_square:" : ":red_square:"} ${rankEmoji("Mod")} Mod: ${onlineMods.length > 0 ? `${onlineMods.join(" ")}` : `${this.timestamp(this.lastSeenData.mod)}`}`);
+            newStatusMessageBuilder.push(`${onlineConductors.length > 0 ? ":green_square:" : ":red_square:"} ${rankEmoji("Conductor")} Conductor: ${onlineConductors.length > 0 ? `${onlineConductors.join(" ")}` : `${this.timestamp(this.lastSeenData.conductor)}`}`);
 
             newStatusMessageBuilder.push(`\n**Staff/Conductors and their Last Seen Dates**`);
             for (const staffMember of staffData) {
-                let staffMemberMessage = `${onlineStaff.includes(staffMember) ? ":green_square:" : ":red_square:"} ${this.rankEmoji(staffMember.Rank)} ${this.playerEmoji(staffMember.Name)} ${escapeMarkdown(staffMember.Name)}${onlineStaff.includes(staffMember) ? ": joined " + this.timestamp(this.onlineSinceData[staffMember.UUID]) : `: ${this.lastSeenData[staffMember.UUID] ? this.timestamp(this.lastSeenData[staffMember.UUID]) : ":shrug:"}`}`;
+                let staffMemberMessage = `${onlineStaff.includes(staffMember) ? ":green_square:" : ":red_square:"} ${rankEmoji(staffMember.Rank)} ${this.playerEmoji(staffMember.Name)} ${escapeMarkdown(staffMember.Name)}${onlineStaff.includes(staffMember) ? ": joined " + this.timestamp(this.onlineSinceData[staffMember.UUID]) : `: ${this.lastSeenData[staffMember.UUID] ? this.timestamp(this.lastSeenData[staffMember.UUID]) : ":shrug:"}`}`;
 
                 newStatusMessageBuilder.push(staffMemberMessage);
             }
@@ -340,14 +341,6 @@ export default class ServerMonitor {
 
     timestamp(timeMs) {
         return `<t:${Math.floor(timeMs / 1000)}:R>`;
-    }
-
-    rankEmoji(rank) {
-        switch (rank) {
-            case "Admin": return "<:Admin:997944788747825284>";
-            case "Mod": return "<:Mod:997944804518395994>";
-            case "Conductor": return "<:Conductor:997944814295334913>";
-        }
     }
 
     playerEmoji(player) {

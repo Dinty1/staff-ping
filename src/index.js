@@ -5,6 +5,7 @@ import fs from "fs";
 import * as logger from "./util/log.js";
 import PlayerEmojiManager from "./PlayerEmojiManager.js";
 import LeaveListener from "./LeaveListener.js";
+import rankEmoji from "./util/rankEmoji.js";
 
 dotenvConfig();
 
@@ -24,10 +25,12 @@ client.on("ready", async () => {
     const subscribeChannelMessages = await client.channels.cache.get(config.subscribe_channel).messages.fetch({ limit: 1 });
     if (subscribeChannelMessages.size == 0) {
         const row = new MessageActionRow();
-        row.addComponents(new MessageButton().setCustomId("subscribe-conductor").setLabel("Conductor").setStyle("PRIMARY"));
-        row.addComponents(new MessageButton().setCustomId("subscribe-mod").setLabel("Mod").setStyle("PRIMARY"));
-        row.addComponents(new MessageButton().setCustomId("subscribe-admin").setLabel("Admin").setStyle("PRIMARY"));
-        row.addComponents(new MessageButton().setCustomId("remove-subscription").setLabel("Remove All").setStyle("DANGER"));
+        row.addComponents(
+            subscribeButton("Conductor"),
+            subscribeButton("Mod"),
+            subscribeButton("Admin"),
+            new MessageButton().setCustomId("remove-subscription").setLabel("Remove All").setStyle("DANGER")
+        );
 
         let messageContent = "**Change your notification preferences here!**";
         messageContent += "\n- If you're waiting for anyone who can do a worldedit, subscribe to Conductor notifications.";
@@ -39,6 +42,10 @@ client.on("ready", async () => {
         client.channels.cache.get("811724497619124234").send({ content: messageContent, components: [row] })
     }
 });
+
+function subscribeButton(rank) {
+    return new MessageButton().setCustomId("subscribe-" + rank.toLowerCase()).setLabel(rank).setStyle("PRIMARY").setEmoji(rankEmoji(rank));
+} 
 
 client.on("interactionCreate", async i => {
     if (!i.isButton()) return;
