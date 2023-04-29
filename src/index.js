@@ -15,26 +15,29 @@ const client = new Client({ intents: intents });
 
 export const config = JSON.parse(fs.readFileSync("./config.json"));
 
-client.on("ready", () => {
+client.on("ready", async () => {
     logger.info("Client logged in as " + client.user.tag);
     let emojiManager = new PlayerEmojiManager(client);
     new ServerMonitor(client, emojiManager).run();
     new LeaveListener(client);
-    /*
-    const row = new MessageActionRow();
-    row.addComponents(new MessageButton().setCustomId("subscribe-conductor").setLabel("Conductor").setStyle("PRIMARY"));
-    row.addComponents(new MessageButton().setCustomId("subscribe-mod").setLabel("Mod").setStyle("SECONDARY"));
-    row.addComponents(new MessageButton().setCustomId("subscribe-admin").setLabel("Admin").setStyle("PRIMARY"));
-    row.addComponents(new MessageButton().setCustomId("remove-subscription").setLabel("Remove All").setStyle("DANGER"));
 
-    let messageContent = "**Change your notification preferences here!**";
-    messageContent += "\n- If you're waiting for anyone who can do a worldedit, subscribe to Conductor notifications.";
-    messageContent += "\n- If you're waiting for anyone who can do mod things like block checks or town endorsements, subscribe to Mod notifications.";
-    messageContent += "\n- If you're waiting for admins for rollbacks or the like, subscribe to Admin notifications.";
-    messageContent += "\n- You can remove each individual preference by pressing the button again or remove all by pressing the Remove All button."
-    messageContent += "\n**Note:** If you only want a worldedit, you _only need_ to enable Conductor notifications. Mods and Admins are automatically designated as Conductors.";
+    const subscribeChannelMessages = await client.channels.cache.get(config.subscribe_channel).messages.fetch({ limit: 1 });
+    if (subscribeChannelMessages.size == 0) {
+        const row = new MessageActionRow();
+        row.addComponents(new MessageButton().setCustomId("subscribe-conductor").setLabel("Conductor").setStyle("PRIMARY"));
+        row.addComponents(new MessageButton().setCustomId("subscribe-mod").setLabel("Mod").setStyle("PRIMARY"));
+        row.addComponents(new MessageButton().setCustomId("subscribe-admin").setLabel("Admin").setStyle("PRIMARY"));
+        row.addComponents(new MessageButton().setCustomId("remove-subscription").setLabel("Remove All").setStyle("DANGER"));
 
-    client.channels.cache.get("811724497619124234").send({ content: messageContent, components: [row] })*/
+        let messageContent = "**Change your notification preferences here!**";
+        messageContent += "\n- If you're waiting for anyone who can do a worldedit, subscribe to Conductor notifications.";
+        messageContent += "\n- If you're waiting for anyone who can do mod things like block checks or town endorsements, subscribe to Mod notifications.";
+        messageContent += "\n- If you're waiting for admins for rollbacks or the like, subscribe to Admin notifications.";
+        messageContent += "\n- You can remove each individual preference by pressing the button again or remove all by pressing the Remove All button."
+        messageContent += "\n**Note:** If you only want a worldedit, you _only need_ to enable Conductor notifications. Mods and Admins are automatically designated as Conductors.";
+
+        client.channels.cache.get("811724497619124234").send({ content: messageContent, components: [row] })
+    }
 });
 
 client.on("interactionCreate", async i => {
