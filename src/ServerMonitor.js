@@ -28,7 +28,11 @@ export default class ServerMonitor {
         this.onlineSinceData = await this.getData(config.online_since_storage_channel);
         this.otherData = await this.getData(config.other_data_storage_channel);
 
-        this.checkServer();
+        try { // Principal aim here is to avoid a restart loop so only checking the first thing should be fine
+            this.checkServer();
+        } catch (e) {
+            console.error(e.stack);
+        }
         setInterval(() => this.checkServer(), config.check_interval);
     }
 
@@ -52,7 +56,7 @@ export default class ServerMonitor {
             const { data: staffData } = await this.getSpreadsheet(config.player_spreadsheet_id, config.player_spreadsheet_sheet_name);
 
             if (!this.otherData.lastRankNag || this.otherData.lastRankNag + config.rank_check_interval < Date.now()) {
-                const {data: members} = await this.getSpreadsheet(config.member_list_spreadsheet, config.member_list_rank_sheet);
+                const { data: members } = await this.getSpreadsheet(config.member_list_spreadsheet, config.member_list_rank_sheet);
                 let rankCounts = {
                     conductor: 0,
                     mod: 0,
