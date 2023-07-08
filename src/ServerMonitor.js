@@ -109,7 +109,7 @@ export default class ServerMonitor {
                 this.otherData.lastFullEmojiRefresh = Date.now();
                 await this.saveData();
             }
-            await this.playerEmojiManager.updateEmojis(refreshCurrent);
+            await this.playerEmojiManager.updateEmojis(refreshCurrent).catch(err => console.error(err.stack));
             if (refreshCurrent) return; // No point in continuing since it'll have been a while
 
             this.emojis = await this.client.guilds.cache.get(config.guild).emojis.fetch();
