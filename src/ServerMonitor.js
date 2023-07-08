@@ -348,6 +348,6 @@ export default class ServerMonitor {
     }
 
     playerEmoji(player) {
-        return this.emojis.find(e => e.name == player);
+        return this.emojis.find(e => e.name == player) ?? "none";
     }
 }
