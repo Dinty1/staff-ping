@@ -135,7 +135,7 @@ export default class ServerMonitor {
             // Fuck you Mojang <3
             let dynmapData;
             let server;
-            dynmapData = (await axios.get("https://dynmap.minecartrapidtransit.net/standalone/dynmap_new.json")
+            dynmapData = (await axios.get("https://dynmap.minecartrapidtransit.net/main/standalone/dynmap_new.json")
                 .catch(error => { throw error }))
                 .data;
             server = await mcUtil.status("minecartrapidtransit.net", 25565, { timeout: 10000 })
