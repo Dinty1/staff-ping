@@ -124,7 +124,7 @@ export default class ServerMonitor {
                     delete this.lastSeenData[entry];
                 }
 
-                this.client.channels.cache.get(config.private_stuff_channel).send("Last seen data getting near to 2000 characters. Purged the following redundant entries: " + purged);
+                if (purged.length > 0) this.client.channels.cache.get(config.private_stuff_channel).send("Last seen data getting near to 2000 characters. Purged the following redundant entries: " + purged);
             }
 
             // In an ideal world we'd be able to just mcUtil.queryFull() and get everyone who's supposed to be visible
