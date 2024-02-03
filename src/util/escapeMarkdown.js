@@ -1,4 +1,4 @@
 export default function escapeMarkdown(string) {
     return string
-        .replace("_", "\\_")
+        .replaceAll("_", "\\_")
 }
