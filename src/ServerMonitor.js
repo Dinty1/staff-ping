@@ -5,15 +5,16 @@ import escapeMarkdown from "./util/escapeMarkdown.js";
 import rankEmoji from "./util/rankEmoji.js";
 import prettyMilliseconds from "pretty-ms";
 import * as logger from "./util/log.js";
+import DataChannel from "./DataChannel.js";
 
 export default class ServerMonitor {
     client;
 
     emojis;
 
-    lastSeenData;
-    onlineSinceData;
-    otherData;
+    lastSeenDataChannel;
+    onlineSinceDataChannel;
+    otherDataChannel;
 
     statusErrorMessage = null;
     statusErrorSince = 0;
@@ -24,9 +25,9 @@ export default class ServerMonitor {
     }
 
     async run() {
-        this.lastSeenData = await this.getData(config.last_seen_storage_channel);
-        this.onlineSinceData = await this.getData(config.online_since_storage_channel);
-        this.otherData = await this.getData(config.other_data_storage_channel);
+        this.lastSeenDataChannel = new DataChannel(config.last_seen_storage_channel, this.client)
+        this.onlineSinceDataChannel = new DataChannel(config.online_since_storage_channel, this.client)
+        this.otherDataChannel = new DataChannel(config.other_data_storage_channel, this.client)
 
         try { // Principal aim here is to avoid a restart loop so only checking the first thing should be fine
             this.checkServer();
@@ -55,7 +56,7 @@ export default class ServerMonitor {
         try {
             const { data: staffData } = await this.getSpreadsheet(config.player_spreadsheet_id, config.player_spreadsheet_sheet_name);
 
-            if (!this.otherData.lastRankNag || this.otherData.lastRankNag + config.rank_check_interval < Date.now()) {
+            if (!this.otherDataChannel.data.lastRankNag || this.otherDataChannel.data.lastRankNag + config.rank_check_interval < Date.now()) {
                 const { data: members } = await this.getSpreadsheet(config.member_list_spreadsheet, config.member_list_rank_sheet);
                 let rankCounts = {
                     conductor: 0,
@@ -99,14 +100,14 @@ export default class ServerMonitor {
                 if (Object.values(rankCounts).includes(0) || Object.values(currentlyConfiguredRankCounts).includes(0)) logger.error("Spreadsheet prob didn't fetch correctly");
                 else if (JSON.stringify(rankCounts) != JSON.stringify(currentlyConfiguredRankCounts)) {
                     this.client.channels.cache.get(config.data_maintainers_channel).send(`Discrepancies between configured ranks and member list:\nOn config: ${JSON.stringify(currentlyConfiguredRankCounts)}\nOn member list: ${JSON.stringify(rankCounts)}`);
-                    this.otherData.lastRankNag = Date.now();
+                    this.otherDataChannel.data.lastRankNag = Date.now();
                 }
             }
 
             let refreshCurrent = false;
-            if (!this.otherData.lastFullEmojiRefresh || this.otherData.lastFullEmojiRefresh + config.player_emojis_update_interval < Date.now()) {
+            if (!this.otherDataChannel.data.lastFullEmojiRefresh || this.otherDataChannel.data.lastFullEmojiRefresh + config.player_emojis_update_interval < Date.now()) {
                 refreshCurrent = true;
-                this.otherData.lastFullEmojiRefresh = Date.now();
+                this.otherDataChannel.data.lastFullEmojiRefresh = Date.now();
                 await this.saveData();
             }
             await this.playerEmojiManager.updateEmojis(refreshCurrent).catch(err => console.error(err.stack));
@@ -114,14 +115,14 @@ export default class ServerMonitor {
 
             this.emojis = await this.client.guilds.cache.get(config.guild).emojis.fetch();
 
-            if (JSON.stringify(this.lastSeenData).length > 1900) {
+            if (JSON.stringify(this.lastSeenDataChannel.data).length > 1900) {
                 let purged = [];
-                for (const entry of Object.keys(this.lastSeenData)) {
+                for (const entry of Object.keys(this.lastSeenDataChannel.data)) {
                     if (["conductor", "mod", "admin"].includes(entry)) continue;
                     if (staffData.map(s => s.UUID).includes(entry)) continue;
 
                     purged.push(entry);
-                    delete this.lastSeenData[entry];
+                    delete this.lastSeenDataChannel.data[entry];
                 }
 
                 if (purged.length > 0) this.client.channels.cache.get(config.private_stuff_channel).send("Last seen data getting near to 2000 characters. Purged the following redundant entries: " + purged);
@@ -165,12 +166,12 @@ export default class ServerMonitor {
 
             for (const staffMember of staffData) {
                 if (onlineIds.includes(staffMember.UUID)) {
-                    this.lastSeenData[staffMember.UUID] = Date.now();
+                    this.lastSeenDataChannel.data[staffMember.UUID] = Date.now();
                     onlineStaff.push(staffMember);
 
-                    if (!this.onlineSinceData[staffMember.UUID]) this.onlineSinceData[staffMember.UUID] = Date.now();
-                } else if (this.onlineSinceData[staffMember.UUID]) { // Not online anymore
-                    delete this.onlineSinceData[staffMember.UUID];
+                    if (!this.onlineSinceDataChannel.data[staffMember.UUID]) this.onlineSinceDataChannel.data[staffMember.UUID] = Date.now();
+                } else if (this.onlineSinceDataChannel.data[staffMember.UUID]) { // Not online anymore
+                    delete this.onlineSinceDataChannel.data[staffMember.UUID];
                 }
             }
 
@@ -215,25 +216,25 @@ export default class ServerMonitor {
             let conductorDeadzoneLength;
 
             if (foundAdmin) {
-                if (Date.now() > parseInt(parseInt(this.lastSeenData.admin) + adminDeadzoneTime)) {
+                if (Date.now() > parseInt(parseInt(this.lastSeenDataChannel.data.admin) + adminDeadzoneTime)) {
                     pinging.push(config.admin_ping_role);
-                    adminDeadzoneLength = Date.now() - parseInt(this.lastSeenData.admin);
+                    adminDeadzoneLength = Date.now() - parseInt(this.lastSeenDataChannel.data.admin);
                 }
-                this.lastSeenData.admin = Date.now();
+                this.lastSeenDataChannel.data.admin = Date.now();
             }
             if (foundMod) {
-                if (Date.now() > parseInt(this.lastSeenData.mod) + modDeadzoneTime) {
+                if (Date.now() > parseInt(this.lastSeenDataChannel.data.mod) + modDeadzoneTime) {
                     pinging.push(config.mod_ping_role);
-                    modDeadzoneLength = Date.now() - parseInt(this.lastSeenData.mod);
+                    modDeadzoneLength = Date.now() - parseInt(this.lastSeenDataChannel.data.mod);
                 }
-                this.lastSeenData.mod = Date.now();
+                this.lastSeenDataChannel.data.mod = Date.now();
             }
             if (foundConductor) {
-                if (Date.now() > parseInt(this.lastSeenData.conductor) + conductorDeadzoneTime) {
+                if (Date.now() > parseInt(this.lastSeenDataChannel.data.conductor) + conductorDeadzoneTime) {
                     pinging.push(config.conductor_ping_role);
-                    conductorDeadzoneLength = Date.now() - parseInt(this.lastSeenData.conductor);
+                    conductorDeadzoneLength = Date.now() - parseInt(this.lastSeenDataChannel.data.conductor);
                 }
-                this.lastSeenData.conductor = Date.now();
+                this.lastSeenDataChannel.data.conductor = Date.now();
             }
 
             if (pinging.length == 0) return; // No deadzones ended
@@ -259,14 +260,9 @@ export default class ServerMonitor {
     }
 
     async saveData() {
-        this.saveDataMessage(config.last_seen_storage_channel, this.lastSeenData);
-        this.saveDataMessage(config.online_since_storage_channel, this.onlineSinceData);
-        this.saveDataMessage(config.other_data_storage_channel, this.otherData);
-    }
-
-    async saveDataMessage(channel, data) {
-        const messages = await this.client.channels.cache.get(channel).messages.fetch({ limit: 1 });
-        messages.first().edit(JSON.stringify(data));
+        this.lastSeenDataChannel.save();
+        this.onlineSinceDataChannel.save();
+        this.otherDataChannel.save();
     }
 
     async updateStatusMessage(onlineStaff, staffData) {
@@ -299,13 +295,13 @@ export default class ServerMonitor {
             }
 
             newStatusMessageBuilder.push("**Roles and their Last Seen Dates**");
-            newStatusMessageBuilder.push(`${onlineAdmins.length > 0 ? ":green_square:" : ":red_square:"} ${rankEmoji("Admin")} Admin: ${onlineAdmins.length > 0 ? `${onlineAdmins.join(" ")}` : `${this.timestamp(this.lastSeenData.admin)}`}`);
-            newStatusMessageBuilder.push(`${onlineMods.length > 0 ? ":green_square:" : ":red_square:"} ${rankEmoji("Mod")} Mod: ${onlineMods.length > 0 ? `${onlineMods.join(" ")}` : `${this.timestamp(this.lastSeenData.mod)}`}`);
-            newStatusMessageBuilder.push(`${onlineConductors.length > 0 ? ":green_square:" : ":red_square:"} ${rankEmoji("Conductor")} Conductor: ${onlineConductors.length > 0 ? `${onlineConductors.join(" ")}` : `${this.timestamp(this.lastSeenData.conductor)}`}`);
+            newStatusMessageBuilder.push(`${onlineAdmins.length > 0 ? ":green_square:" : ":red_square:"} ${rankEmoji("Admin")} Admin: ${onlineAdmins.length > 0 ? `${onlineAdmins.join(" ")}` : `${this.timestamp(this.lastSeenDataChannel.data.admin)}`}`);
+            newStatusMessageBuilder.push(`${onlineMods.length > 0 ? ":green_square:" : ":red_square:"} ${rankEmoji("Mod")} Mod: ${onlineMods.length > 0 ? `${onlineMods.join(" ")}` : `${this.timestamp(this.lastSeenDataChannel.data.mod)}`}`);
+            newStatusMessageBuilder.push(`${onlineConductors.length > 0 ? ":green_square:" : ":red_square:"} ${rankEmoji("Conductor")} Conductor: ${onlineConductors.length > 0 ? `${onlineConductors.join(" ")}` : `${this.timestamp(this.lastSeenDataChannel.data.conductor)}`}`);
 
             newStatusMessageBuilder.push(`\n**Staff/Conductors and their Last Seen Dates**`);
             for (const staffMember of staffData) {
-                let staffMemberMessage = `${onlineStaff.includes(staffMember) ? ":green_square:" : ":red_square:"} ${rankEmoji(staffMember.Rank)} ${this.playerEmoji(staffMember.Name)} ${escapeMarkdown(staffMember.Name)}${onlineStaff.includes(staffMember) ? ": joined " + this.timestamp(this.onlineSinceData[staffMember.UUID]) : `: ${this.lastSeenData[staffMember.UUID] ? this.timestamp(this.lastSeenData[staffMember.UUID]) : ":shrug:"}`}`;
+                let staffMemberMessage = `${onlineStaff.includes(staffMember) ? ":green_square:" : ":red_square:"} ${rankEmoji(staffMember.Rank)} ${this.playerEmoji(staffMember.Name)} ${escapeMarkdown(staffMember.Name)}${onlineStaff.includes(staffMember) ? ": joined " + this.timestamp(this.onlineSinceDataChannel.data[staffMember.UUID]) : `: ${this.lastSeenDataChannel.data[staffMember.UUID] ? this.timestamp(this.lastSeenDataChannel.data[staffMember.UUID]) : ":shrug:"}`}`;
 
                 newStatusMessageBuilder.push(staffMemberMessage);
             }

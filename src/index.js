@@ -45,7 +45,7 @@ client.on("ready", async () => {
 
 function subscribeButton(rank) {
     return new MessageButton().setCustomId("subscribe-" + rank.toLowerCase()).setLabel(rank).setStyle("PRIMARY").setEmoji(rankEmoji(rank));
-} 
+}
 
 client.on("interactionCreate", async i => {
     if (!i.isButton()) return;
