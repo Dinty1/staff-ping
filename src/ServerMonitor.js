@@ -6,6 +6,7 @@ import rankEmoji from "./util/rankEmoji.js";
 import prettyMilliseconds from "pretty-ms";
 import * as logger from "./util/log.js";
 import DataChannel from "./DataChannel.js";
+import findUUIDs from "./util/findUUIDs.js";
 
 export default class ServerMonitor {
     client;
@@ -19,9 +20,12 @@ export default class ServerMonitor {
     statusErrorMessage = null;
     statusErrorSince = 0;
 
-    constructor(client, playerEmojiManager) {
+    individualNotificationsManager
+
+    constructor(client, playerEmojiManager, individualNotificationsManager) {
         this.client = client;
         this.playerEmojiManager = playerEmojiManager;
+        this.individualNotificationsManager = individualNotificationsManager;
     }
 
     async run() {
@@ -153,14 +157,9 @@ export default class ServerMonitor {
             const onlineNames = dynmapData.players.map(p => p.account);
             onlineNames.push(...server.players.sample.map(p => p.name).filter(p => !onlineNames.includes(p)));
 
-            const onlineIds = [];
+            const onlineIds = await findUUIDs(onlineNames);
 
-            // Need to convert these names to IDs. Max number per request is 10
-            for (let i = 0; i < onlineNames.length; i += 10) {
-                let { data } = await axios.post("https://api.mojang.com/profiles/minecraft", onlineNames.slice(i, i + 10))
-                    .catch(error => { throw new Error("Unable to reach Mojang API") });
-                if (data) onlineIds.push(...data.map(p => p.id));
-            }
+            this.individualNotificationsManager.reportServerPlayers(onlineIds, onlineNames);
 
             const onlineStaff = [];
 
