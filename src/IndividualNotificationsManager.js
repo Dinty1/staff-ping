@@ -69,7 +69,7 @@ export default class IndividualNotificationsManager {
                 }
 
                 this.dataChannel.data[i.user.id].subscribe = newEntries;
-                if (!this.dataChannel.data[i.user.id].thread) this.dataChannel.data[i.user.id].thread = await this.createPrivateThread(i.user)
+                if (!this.dataChannel.data[i.user.id].thread && Object.keys(newEntries).length > 0) this.dataChannel.data[i.user.id].thread = await this.createPrivateThread(i.user)
                 this.dataChannel.save();
 
                 let outputMessage = "**Now watching for these people:**\n";
@@ -90,7 +90,7 @@ export default class IndividualNotificationsManager {
             name: user.username,
             type: "GUILD_PRIVATE_THREAD"
         })
-        thread.send(`<@${user.id}> Welcome to your private notification thread. Please note that Dinty can see this so don't do anything too wild.`)
+        thread.send(`<@${user.id}> Welcome to your private notification thread. Please note that Dinty can see this so don't do anything too wild :)`)
         return thread.id;
     }
 
