@@ -33,7 +33,7 @@ export default class IndividualNotificationsManager {
                 }
 
                 const modal = new Modal()
-                    .setCustomId("individual-notifications-editor")
+                    .setCustomId("individual-notifications-editor" + Math.floor(Math.random() * 10000)) // Append gibberish to bypass client cache that we don't want
                     .setTitle("Edit Individual Notifications")
                     .addComponents(
                         new MessageActionRow().addComponents(
@@ -46,7 +46,7 @@ export default class IndividualNotificationsManager {
                     )
 
                 i.showModal(modal);
-            } else if (i.customId == "individual-notifications-editor") {
+            } else if (i.customId.startsWith("individual-notifications-editor")) {
                 await i.deferReply({ ephemeral: true });
                 const input = i.fields.getTextInputValue("people");
                 let entries = input.split("\n");
