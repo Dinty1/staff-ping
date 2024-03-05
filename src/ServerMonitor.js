@@ -20,7 +20,9 @@ export default class ServerMonitor {
     statusErrorMessage = null;
     statusErrorSince = 0;
 
-    individualNotificationsManager
+    individualNotificationsManager;
+
+    deadzoneMinLengths = {}
 
     constructor(client, playerEmojiManager, individualNotificationsManager) {
         this.client = client;
@@ -29,9 +31,13 @@ export default class ServerMonitor {
     }
 
     async run() {
-        this.lastSeenDataChannel = new DataChannel(config.last_seen_storage_channel, this.client)
-        this.onlineSinceDataChannel = new DataChannel(config.online_since_storage_channel, this.client)
-        this.otherDataChannel = new DataChannel(config.other_data_storage_channel, this.client)
+        this.lastSeenDataChannel = new DataChannel(config.last_seen_storage_channel, this.client);
+        this.onlineSinceDataChannel = new DataChannel(config.online_since_storage_channel, this.client);
+        this.otherDataChannel = new DataChannel(config.other_data_storage_channel, this.client);
+
+        this.deadzoneMinLengths.conductor = parseInt(config.deadzone_times.conductor);
+        this.deadzoneMinLengths.mod = parseInt(config.deadzone_times.mod);
+        this.deadzoneMinLengths.admin = parseInt(config.deadzone_times.admin);
 
         try { // Principal aim here is to avoid a restart loop so only checking the first thing should be fine
             this.checkServer();
@@ -206,30 +212,27 @@ export default class ServerMonitor {
             if (!onlinePerson) return; // No people so no need to do stuff
 
             const pinging = [];
-            const conductorDeadzoneTime = parseInt(config.conductor_deadzone_time);
-            const modDeadzoneTime = parseInt(config.mod_deadzone_time);
-            const adminDeadzoneTime = parseInt(config.admin_deadzone_time);
 
             let adminDeadzoneLength
             let modDeadzoneLength;
             let conductorDeadzoneLength;
 
             if (foundAdmin) {
-                if (Date.now() > parseInt(parseInt(this.lastSeenDataChannel.data.admin) + adminDeadzoneTime)) {
+                if (Date.now() > parseInt(parseInt(this.lastSeenDataChannel.data.admin) + this.deadzoneMinLengths.admin)) {
                     pinging.push(config.admin_ping_role);
                     adminDeadzoneLength = Date.now() - parseInt(this.lastSeenDataChannel.data.admin);
                 }
                 this.lastSeenDataChannel.data.admin = Date.now();
             }
             if (foundMod) {
-                if (Date.now() > parseInt(this.lastSeenDataChannel.data.mod) + modDeadzoneTime) {
+                if (Date.now() > parseInt(this.lastSeenDataChannel.data.mod) + this.deadzoneMinLengths.mod) {
                     pinging.push(config.mod_ping_role);
                     modDeadzoneLength = Date.now() - parseInt(this.lastSeenDataChannel.data.mod);
                 }
                 this.lastSeenDataChannel.data.mod = Date.now();
             }
             if (foundConductor) {
-                if (Date.now() > parseInt(this.lastSeenDataChannel.data.conductor) + conductorDeadzoneTime) {
+                if (Date.now() > parseInt(this.lastSeenDataChannel.data.conductor) + this.deadzoneMinLengths.conductor) {
                     pinging.push(config.conductor_ping_role);
                     conductorDeadzoneLength = Date.now() - parseInt(this.lastSeenDataChannel.data.conductor);
                 }
@@ -294,13 +297,13 @@ export default class ServerMonitor {
             }
 
             newStatusMessageBuilder.push("**Roles and their Last Seen Dates**");
-            newStatusMessageBuilder.push(`${onlineAdmins.length > 0 ? ":green_square:" : ":red_square:"} ${rankEmoji("Admin")} Admin: ${onlineAdmins.length > 0 ? `${onlineAdmins.join(" ")}` : `${this.timestamp(this.lastSeenDataChannel.data.admin)}`}`);
-            newStatusMessageBuilder.push(`${onlineMods.length > 0 ? ":green_square:" : ":red_square:"} ${rankEmoji("Mod")} Mod: ${onlineMods.length > 0 ? `${onlineMods.join(" ")}` : `${this.timestamp(this.lastSeenDataChannel.data.mod)}`}`);
-            newStatusMessageBuilder.push(`${onlineConductors.length > 0 ? ":green_square:" : ":red_square:"} ${rankEmoji("Conductor")} Conductor: ${onlineConductors.length > 0 ? `${onlineConductors.join(" ")}` : `${this.timestamp(this.lastSeenDataChannel.data.conductor)}`}`);
+            newStatusMessageBuilder.push(`${onlineAdmins.length > 0 ? ":green_square:" : this.redOrOrange("admin")} ${rankEmoji("Admin")} Admin: ${onlineAdmins.length > 0 ? `${onlineAdmins.join(" ")}` : `${this.timestamp(this.lastSeenDataChannel.data.admin)}`} `);
+            newStatusMessageBuilder.push(`${onlineMods.length > 0 ? ":green_square:" : this.redOrOrange("mod")} ${rankEmoji("Mod")} Mod: ${onlineMods.length > 0 ? `${onlineMods.join(" ")}` : `${this.timestamp(this.lastSeenDataChannel.data.mod)}`} `);
+            newStatusMessageBuilder.push(`${onlineConductors.length > 0 ? ":green_square:" : this.redOrOrange("conductor")} ${rankEmoji("Conductor")} Conductor: ${onlineConductors.length > 0 ? `${onlineConductors.join(" ")}` : `${this.timestamp(this.lastSeenDataChannel.data.conductor)}`} `);
 
-            newStatusMessageBuilder.push(`\n**Staff/Conductors and their Last Seen Dates**`);
+            newStatusMessageBuilder.push(`\n**Staff / Conductors and their Last Seen Dates**`);
             for (const staffMember of staffData) {
-                let staffMemberMessage = `${onlineStaff.includes(staffMember) ? ":green_square:" : ":red_square:"} ${rankEmoji(staffMember.Rank)} ${this.playerEmoji(staffMember.Name)} ${escapeMarkdown(staffMember.Name)}${onlineStaff.includes(staffMember) ? ": joined " + this.timestamp(this.onlineSinceDataChannel.data[staffMember.UUID]) : `: ${this.lastSeenDataChannel.data[staffMember.UUID] ? this.timestamp(this.lastSeenDataChannel.data[staffMember.UUID]) : ":shrug:"}`}`;
+                let staffMemberMessage = `${onlineStaff.includes(staffMember) ? ":green_square:" : this.redOrOrange(staffMember.Rank, staffMember.UUID)} ${rankEmoji(staffMember.Rank)} ${this.playerEmoji(staffMember.Name)} ${escapeMarkdown(staffMember.Name)}${onlineStaff.includes(staffMember) ? ": joined " + this.timestamp(this.onlineSinceDataChannel.data[staffMember.UUID]) : `: ${this.lastSeenDataChannel.data[staffMember.UUID] ? this.timestamp(this.lastSeenDataChannel.data[staffMember.UUID]) : ":shrug:"}`}`;
 
                 newStatusMessageBuilder.push(staffMemberMessage);
             }
@@ -344,5 +347,9 @@ export default class ServerMonitor {
 
     playerEmoji(player) {
         return this.emojis.find(e => e.name == player) ?? "none";
+    }
+
+    redOrOrange(rank, uuid) {
+        return this.lastSeenDataChannel.data[uuid ?? rank.toLowerCase()] + this.deadzoneMinLengths[rank.toLowerCase()] < Date.now() ? ":red_square:" : ":orange_square:";
     }
 }
