@@ -310,6 +310,7 @@ export default class ServerMonitor {
         }
 
         newStatusMessageBuilder.push(`\nNext update ${this.timestamp(Date.now() + parseInt(config.check_interval))}`);
+        newStatusMessageBuilder.push(`Next skin refresh ${this.timestamp(this.otherDataChannel.data.lastFullEmojiRefresh + parseInt(config.player_emojis_update_interval))}`);
 
         // Because of rate limits and things we're going to spread this out over multiple messages
         // If you want to preserve your brain stop reading now
