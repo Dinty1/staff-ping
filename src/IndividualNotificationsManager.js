@@ -1,4 +1,4 @@
-import { MessageActionRow, Modal, TextInputComponent } from "discord.js";
+import { ActionRowBuilder, StringSelectMenuBuilder, ModalBuilder, TextInputBuilder } from "discord.js";
 import DataChannel from "./DataChannel.js";
 import { config } from "./index.js"
 import axios from "axios";
@@ -32,16 +32,16 @@ export default class IndividualNotificationsManager {
                     formContent += `${alreadySubscribed[i].name} | ${i}\n`;
                 }
 
-                const modal = new Modal()
-                    .setCustomId("individual-notifications-editor" + Math.floor(Math.random() * 10000)) // Append gibberish to bypass client cache that we don't want
+                const modal = new ModalBuilder()
+                    .setCustomId("individual-notifications-editor" + Math.floor(Math.random() * 99999)) // Append gibberish to bypass client cache that we don't want
                     .setTitle("Edit Individual Notifications")
                     .addComponents(
-                        new MessageActionRow().addComponents(
-                            new TextInputComponent()
+                        new ActionRowBuilder().addComponents(
+                            new TextInputBuilder()
                                 .setCustomId("people")
                                 .setLabel("List people to subscribe to. One on each line")
                                 .setValue(formContent)
-                                .setStyle("PARAGRAPH")
+                                .setStyle("Paragraph")
                         )
                     )
 
@@ -62,7 +62,7 @@ export default class IndividualNotificationsManager {
 
                 for (const name of names) {
                     let data = await this.getPlayerProfile(name);
-                    
+
 
                     if (!data) failedToFetch.push(name);
                     else newEntries[data.data.player.raw_id] = { name: data.data.player.username };
@@ -80,7 +80,35 @@ export default class IndividualNotificationsManager {
 
                 if (failedToFetch.length > 0) outputMessage += `\n**Failed to find accounts for these names:** ${failedToFetch.join(", ")}`;
 
-                i.editReply(escapeMarkdown(outputMessage));
+                outputMessage += "\n*Edit the below menu to only be pinged when you have a certain status **on Discord***"
+
+                const row = new ActionRowBuilder().addComponents(
+                    new StringSelectMenuBuilder()
+                        .setCustomId("statuspings")
+                        .setPlaceholder("Only ping when you have these statuses")
+                        .setOptions({
+                            label: "Online",
+                            value: "online"
+                        }, {
+                            label: "Idle",
+                            value: "idle"
+                        }, {
+                            label: "DND",
+                            value: "dnd"
+                        }, {
+                            label: "Offline",
+                            value: "offline"
+                        })
+                        .setMaxValues(4)
+                )
+
+                i.editReply({ content: escapeMarkdown(outputMessage), components: [row] });
+            } else if (i.customId == "statuspings") {
+                this.dataChannel.data[i.user.id].statuses = i.values;
+                let msg = "Now only pinging you if a person joins and you have one of these statuses: " + humanReadableArrayOutput(i.values.map(s => `**${s}**`));
+                this.sendToThread(this.dataChannel.data[i.user.id].thread, msg);
+                this.dataChannel.save();
+                i.reply({ content: msg, ephemeral: true });
             }
         });
     }
@@ -88,7 +116,7 @@ export default class IndividualNotificationsManager {
     async createPrivateThread(user) {
         const thread = await this.pingChannel.threads.create({
             name: user.username,
-            type: "GUILD_PRIVATE_THREAD"
+            type: "GuildPrivateThread"
         })
         thread.send(`<@${user.id}> Welcome to your private notification thread. Please note that Dinty can see this so don't do anything too wild :)`)
         return thread.id;
@@ -112,6 +140,17 @@ export default class IndividualNotificationsManager {
         let sentNotification = false;
 
         for (let i in data) {
+            // Check if status criteria are matched
+            let sendPing = true;
+            let member;
+            try {
+                member = await this.client.guilds.cache.get(config.guild).members.fetch(i);
+            } catch (apiError) {
+                continue;
+            }
+            const status = member.presence?.status ?? "offline";
+            if (data[i].statuses && !data[i].statuses.includes(status)) sendPing = false;
+
             let foundPlayers = [];
             for (let j in data[i].subscribe) {
                 if (uuids.includes(j)) {
@@ -123,12 +162,13 @@ export default class IndividualNotificationsManager {
                         if (profileData) newName = profileData.data.player.username;
                     }
 
-                    foundPlayers.push({ 
+                    foundPlayers.push({
                         storedName: storedName,
-                        newName: newName ?? null
+                        newName: newName ?? null,
+                        uuid: j
                     });
 
-                    delete this.dataChannel.data[i].subscribe[j];
+                    if (sendPing) delete this.dataChannel.data[i].subscribe[j];
                 }
             }
 
@@ -141,17 +181,38 @@ export default class IndividualNotificationsManager {
                 else playersFormatted.push(`**${player.newName}** (${player.storedName})`);
             }
 
-            let thread = (await this.pingChannel.threads.fetch(data[i].thread));
+            const playerList = humanReadableArrayOutput(playersFormatted.map(p => escapeMarkdown(p)));
 
-            if (!thread.sendable) {
-                await thread.setArchived(false);
+            if (!sendPing) {
+                // If one of the players should have a message sent about them we may as well include the whole list even if it hasn't been 24h
+                let shouldAnnounce = false;
+                for (const player of foundPlayers) {
+                    if (!this.dataChannel.data[i].subscribe[player.uuid].lastAnnounced || ((this.dataChannel.data[i].subscribe[player.uuid].lastAnnounced + 1000 * 60 * 60 * 24) < Date.now())) shouldAnnounce = true;
+                }
+                if (!shouldAnnounce) continue;
+
+                await this.sendToThread(data[i].thread, `${playerList} ${playersFormatted.length == 1 ? "is" : "are"} online but your status is **${status}** and you requested only to be pinged when you have these statuses: ${humanReadableArrayOutput(data[i].statuses.map(s => `**${s}**`))}`);
+                sentNotification = true;
+                // Now update all the last announced times
+                for (const player of foundPlayers) this.dataChannel.data[i].subscribe[player.uuid].lastAnnounced = Date.now();
+                continue;
             }
 
-            thread.send(`<@${i}> ${humanReadableArrayOutput(playersFormatted.map(p => escapeMarkdown(p)))} ${playersFormatted.length == 1 ? "has" : "have"} joined! They will now be removed from your notification list.`);
+            await this.sendToThread(data[i].thread, `<@${i}> ${playerList} ${playersFormatted.length == 1 ? "is" : "are"} online! They will now be removed from your notification list.`);
 
             sentNotification = true;
         }
 
         if (sentNotification) this.dataChannel.save();
+    }
+
+    async sendToThread(id, message) {
+        let thread = (await this.pingChannel.threads.fetch(id));
+
+        if (!thread.sendable) {
+            await thread.setArchived(false);
+        }
+
+        await thread.send(message)
     }
 }

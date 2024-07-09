@@ -1,4 +1,4 @@
-import { Client, Intents, MessageActionRow, MessageButton } from "discord.js";
+import { ActionRowBuilder, ButtonBuilder, Client, GatewayIntentBits } from "discord.js";
 import { config as dotenvConfig } from "dotenv";
 import ServerMonitor from "./ServerMonitor.js";
 import fs from "fs";
@@ -10,10 +10,7 @@ import IndividualNotificationsManager from "./IndividualNotificationsManager.js"
 
 dotenvConfig();
 
-const intents = new Intents();
-intents.add(Intents.FLAGS.GUILDS);
-intents.add(Intents.FLAGS.GUILD_MEMBERS);
-const client = new Client({ intents: intents });
+const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildPresences] });
 
 export const config = JSON.parse(fs.readFileSync("./config.json"));
 
@@ -26,13 +23,13 @@ client.on("ready", async () => {
 
     const subscribeChannelMessages = await client.channels.cache.get(config.subscribe_channel).messages.fetch({ limit: 1 });
     if (subscribeChannelMessages.size == 0) {
-        const row = new MessageActionRow();
+        const row = new ActionRowBuilder();
         row.addComponents(
             subscribeButton("Conductor"),
             subscribeButton("Mod"),
             subscribeButton("Admin"),
-            new MessageButton().setCustomId("remove-subscription").setLabel("Remove All").setStyle("DANGER"),
-            new MessageButton().setCustomId("edit-individual-notifications").setLabel("Manage Individual Notifications").setStyle("SECONDARY")
+            new ButtonBuilder().setCustomId("remove-subscription").setLabel("Remove All").setStyle("Danger"),
+            new ButtonBuilder().setCustomId("edit-individual-notifications").setLabel("Manage Individual Notifications").setStyle("Secondary")
         );
 
         let messageContent = [
@@ -58,7 +55,7 @@ client.on("ready", async () => {
 });
 
 function subscribeButton(rank) {
-    return new MessageButton().setCustomId("subscribe-" + rank.toLowerCase()).setLabel(rank).setStyle("PRIMARY").setEmoji(rankEmoji(rank));
+    return new ButtonBuilder().setCustomId("subscribe-" + rank.toLowerCase()).setLabel(rank).setStyle("Primary").setEmoji(rankEmoji(rank));
 }
 
 client.on("interactionCreate", async i => {
