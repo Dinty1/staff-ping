@@ -36,7 +36,7 @@ export default class PlayerEmojiManager {
                 if ((emoji && refreshCurrent) || !emoji) {
                     let { data: currentSkin } = await axios.get("https://heads.discordsrv.com/head.png?overlay&uuid=" + staffMember.UUID, { responseType: "arraybuffer" })
                         .catch(err => rej());
-                    await this.guild.emojis.create(Buffer.from(currentSkin, "base64"), staffMember.Name);
+                    await this.guild.emojis.create({ attachment: Buffer.from(currentSkin, "base64"), name: staffMember.Name});
                 }
             }
             res();
