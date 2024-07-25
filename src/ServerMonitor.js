@@ -248,6 +248,7 @@ export default class ServerMonitor {
             if (conductorDeadzoneLength) outputMessage += `\n**Conductor:** ${prettyMilliseconds(conductorDeadzoneLength, { verbose: true })}`;
 
             this.client.channels.cache.get(config.ping_channel).send(outputMessage);
+            await this.saveData();
         } catch (error) {
             this.statusErrorMessage = error;
             if (this.statusErrorSince == 0) this.statusErrorSince = Date.now();
