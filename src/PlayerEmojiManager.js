@@ -1,5 +1,6 @@
 import { config } from "./index.js";
 import axios from "axios";
+import wait from "./util/wait.js";
 
 export default class PlayerEmojiManager {
     client;
@@ -37,6 +38,7 @@ export default class PlayerEmojiManager {
                     let { data: currentSkin } = await axios.get("https://heads.discordsrv.com/head.png?overlay&uuid=" + staffMember.UUID, { responseType: "arraybuffer" })
                         .catch(err => rej());
                     await this.guild.emojis.create({ attachment: Buffer.from(currentSkin, "base64"), name: staffMember.Name});
+                    await wait(1000);
                 }
             }
             res();
