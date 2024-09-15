@@ -59,6 +59,7 @@ export default class ServerMonitor {
     }
 
     getSpreadsheet(id, sheet) {
+        console.log("getting spreadsheet...")
         return axios.get(`https://script.google.com/macros/s/AKfycbwde4vwt0l4_-qOFK_gL2KbVAdy7iag3BID8NWu2DQ1566kJlqyAS1Y/exec?spreadsheetId=${id}&sheetName=${sheet}`)
     }
 
@@ -149,9 +150,10 @@ export default class ServerMonitor {
             dynmapData = (await axios.get("https://dynmap.minecartrapidtransit.net/main/standalone/dynmap_new.json")
                 .catch(error => { throw error }))
                 .data;
+            console.log("got dynmap data")
             server = await mcUtil.status("minecartrapidtransit.net", 25565, { timeout: 10000 })
                 .catch(error => { throw error });
-
+            console.log("got server status")
 
             // This might or might not be necessary idk
             if (!server || !server.players || !dynmapData || !dynmapData.players) {
