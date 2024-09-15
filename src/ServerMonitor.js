@@ -66,9 +66,10 @@ export default class ServerMonitor {
     async checkServer() {
         try {
             const { data: staffData } = await this.getSpreadsheet(config.player_spreadsheet_id, config.player_spreadsheet_sheet_name);
-
+            console.log("got spreadsheet")
             if (!this.otherDataChannel.data.lastRankNag || this.otherDataChannel.data.lastRankNag + config.rank_check_interval < Date.now()) {
                 const { data: members } = await this.getSpreadsheet(config.member_list_spreadsheet, config.member_list_rank_sheet);
+                console.log("got other spreadsheet")
                 let rankCounts = {
                     conductor: 0,
                     mod: 0,
