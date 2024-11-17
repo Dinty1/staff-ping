@@ -17,6 +17,8 @@ export default class ServerMonitor {
     onlineSinceDataChannel;
     otherDataChannel;
 
+    uuidCache = {};
+
     statusErrorMessage = null;
     statusErrorSince = 0;
 
@@ -165,15 +167,26 @@ export default class ServerMonitor {
 
             const onlineNames = dynmapData.players.map(p => p.account);
             onlineNames.push(...server.players.sample.map(p => p.name).filter(p => !onlineNames.includes(p)));
+            
+            const onlineNamesUncached = [];
+            const onlineProfiles = [];
 
-            const onlineIds = await findUUIDs(onlineNames);
+            for (const name of onlineNames) {
+                if (this.uuidCache[name]) onlineProfiles.push({ id: this.uuidCache[name], name: name });
+                else onlineNamesUncached.push(name);
+            }
 
-            this.individualNotificationsManager.reportServerPlayers(onlineIds, onlineNames);
+            onlineProfiles.push(...await findUUIDs(onlineNames));
+
+            for (const profile of onlineProfiles) { // Add newly found ones to cache
+                this.uuidCache[profile.name] = profile.id;
+            }
+            this.individualNotificationsManager.reportServerPlayers(onlineProfiles, onlineNames);
 
             const onlineStaff = [];
 
             for (const staffMember of staffData) {
-                if (onlineIds.includes(staffMember.UUID)) {
+                if (onlineProfiles.includes(staffMember.UUID)) {
                     this.lastSeenDataChannel.data[staffMember.UUID] = Date.now();
                     onlineStaff.push(staffMember);
 
@@ -189,19 +202,19 @@ export default class ServerMonitor {
             let onlinePerson = null;
 
             for (const conductor of staffData.filter(v => v.Rank == "Conductor")) {
-                if (onlineIds.includes(conductor.UUID)) {
+                if (onlineProfiles.includes(conductor.UUID)) {
                     foundConductor = onlinePerson = conductor.Name;
                     break;
                 }
             }
             for (const mod of staffData.filter(v => v.Rank == "Mod")) {
-                if (onlineIds.includes(mod.UUID)) {
+                if (onlineProfiles.includes(mod.UUID)) {
                     foundMod = foundConductor = onlinePerson = mod.Name;
                     break;
                 }
             }
             for (const admin of staffData.filter(v => v.Rank == "Admin")) {
-                if (onlineIds.includes(admin.UUID)) {
+                if (onlineProfiles.includes(admin.UUID)) {
                     foundAdmin = foundMod = foundConductor = onlinePerson = admin.Name;
                     break;
                 }
